@@ -6,8 +6,10 @@ import { ThemeProvider } from './context/ThemeContext.jsx'; // PRECISA TER ESSA 
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <ThemeProvider> {/* PRECISA ENVOLVER O APP ASSIM */}
-      <App />
+    <ThemeProvider>
+      <AuthProvider> {/* 2. Envolva o App aqui */}
+        <App />
+      </AuthProvider>
     </ThemeProvider>
   </React.StrictMode>
 );

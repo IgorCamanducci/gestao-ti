@@ -1,41 +1,55 @@
 import React, { useState } from 'react';
-import './Login.css'; // O CSS que ajustamos para responsividade
-import { useTheme } from '../context/ThemeContext'; // Hook para o tema
-// CORREÇÃO: Importando ícones do Font Awesome (fa) em vez do Weather Icons (wi)
+import './Login.css';
+import { useTheme } from '../context/ThemeContext';
 import { FaMoon, FaSun } from 'react-icons/fa';
+import { useAuth } from '../context/AuthContext';
+
+const API_URL = 'http://localhost:3001';
 
 function Login() {
-  // Hook para gerenciar o tema (claro/escuro)
   const { theme, toggleTheme } = useTheme();
-
-  // Hooks para armazenar os valores dos campos de e-mail e senha
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  // Função chamada ao clicar no botão "Entrar"
-  const handleSubmit = (event) => {
-    // Previne que a página recarregue ao enviar o formulário
+  const handleSubmit = async (event) => {
     event.preventDefault();
+    try {
+      // Código completo da requisição fetch que estava faltando
+      const response = await fetch(`${API_URL}/api/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
 
-    // Por enquanto, apenas exibimos os dados no console do navegador
-    console.log('Tentativa de login com:');
-    console.log('Email:', email);
-    console.log('Senha:', password);
+      const data = await response.json();
+
+      if (data.success) {
+        // Em vez de alert, chame a função login!
+        // Vamos passar um objeto de usuário simples por enquanto
+        login({ email: email, name: 'Usuário Teste' });
+      } else {
+        alert('Erro: ' + data.message);
+      }
+    } catch (error) {
+      console.error("Erro de conexão:", error);
+      alert('Não foi possível conectar ao servidor.');
+    }
   };
 
+  // O JSX completo que estava faltando
   return (
     <div className="login-page">
-      {/* Botão para alternar o tema, posicionado no canto da tela via CSS */}
       <button
         onClick={toggleTheme}
         className="theme-toggle-button"
         aria-label={theme === 'light' ? 'Mudar para o tema escuro' : 'Mudar para o tema claro'}
       >
-        {/* CORREÇÃO: Usando os ícones FaMoon e FaSun */}
         {theme === 'light' ? <FaMoon size={22} /> : <FaSun size={24} color="#f9d71c" />}
       </button>
 
-      {/* Container principal do formulário de login */}
       <div className="login-container">
         <h1>Gestão de TI</h1>
         <form className="login-form" onSubmit={handleSubmit}>
@@ -60,5 +74,4 @@ function Login() {
   );
 }
 
-// Exporta o componente para ser usado em outras partes do aplicativo
 export default Login;
