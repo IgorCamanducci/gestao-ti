@@ -1,0 +1,50 @@
+.app-layout {
+  display: flex;
+}
+
+.sidebar {
+  width: 250px;
+  background-color: var(--sidebar-bg);;
+  height: 100vh;
+  padding: 20px;
+  box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+}
+
+.sidebar h2 {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+}
+
+.sidebar ul li {
+  margin-bottom: 10px;
+}
+
+.sidebar ul li a {
+  text-decoration: none;
+  color: var(--sidebar-link-color);;
+  display: block;
+  padding: 10px;
+  border-radius: 5px;
+  transition: background-color 0.3s;
+}
+
+.sidebar ul li a:hover {
+  background-color: var(--sidebar-link-hover-bg);
+}
+
+.sidebar .separator {
+    border-top: 1px solid #ccc;
+    margin-top: 20px;
+    padding-top: 20px;
+}
+
+.content {
+  flex-grow: 1;
+  padding: 20px;
+  background-color: var(--bg-color); /* Adicione esta linha */
+}
