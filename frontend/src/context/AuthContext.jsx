@@ -17,7 +17,7 @@ export function AuthProvider({ children }) {
     });
 
     // Ouve mudanças no estado de autenticação (login, logout)
-    const { data: listener } = supabase.auth.onAuthStateChange(
+    const { data } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
@@ -25,8 +25,9 @@ export function AuthProvider({ children }) {
       }
     );
 
+    // CORREÇÃO: A função de limpeza agora chama o unsubscribe na propriedade 'subscription'
     return () => {
-      listener?.unsubscribe();
+      data.subscription?.unsubscribe();
     };
   }, []);
 
