@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, Link } from 'react-router-dom';
-import './Layout.css'; // Vamos criar este arquivo de estilo a seguir
+import './layout.css'; // Vamos criar este arquivo de estilo a seguir
 
 function Layout() {
   return (
