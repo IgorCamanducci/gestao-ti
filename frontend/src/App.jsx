@@ -2,7 +2,7 @@ import React from 'react';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
 // Componentes de estrutura e autenticação
-import Layout from './components/layout/Layout.jsx';
+import Layout from './components/layout/layout.jsx';
 import Login from './pages/Login.jsx';
 import ProtectedRoute from './components/auth/ProtectedRoute.jsx';
 
@@ -22,14 +22,11 @@ import Logout from './pages/Logout.jsx';
 const router = createBrowserRouter([
   {
     path: '/',
-    // GARANTIA: O Layout e todas as páginas filhas SÓ SERÃO RENDERIZADAS
-    // se o usuário passar pela verificação do ProtectedRoute.
     element: (
       <ProtectedRoute>
         <Layout />
       </ProtectedRoute>
     ),
-    // As páginas filhas agora são renderizadas dentro do Layout protegido
     children: [
       { path: 'folgas', element: <GestaoDeFolgas /> },
       { path: 'ferias', element: <GestaoDeFerias /> },
@@ -44,13 +41,11 @@ const router = createBrowserRouter([
     ],
   },
   {
-    // A página de Login continua sendo pública e fora do layout principal
     path: '/login',
     element: <Login />,
   },
 ]);
 
-// Componente principal que provê as rotas para a aplicação
 function App() {
   return <RouterProvider router={router} />;
 }
