@@ -15,6 +15,7 @@ function Layout() {
           <li><Link to="/estoque">Controle de Estoque</Link></li>
           <li><Link to="/turno">Troca de Turno</Link></li>
           <li><Link to="/pendencias">Pendências</Link></li>
+          <li><Link to="/usuarios">Usuários</Link></li> {/* <-- ADICIONE ESTA LINHA */}
           <li className="separator"><Link to="/configuracoes">Configurações</Link></li>
           <li><Link to="/logout">Logout</Link></li>
         </ul>
