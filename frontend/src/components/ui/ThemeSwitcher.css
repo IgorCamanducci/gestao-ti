@@ -1,0 +1,16 @@
+.theme-switcher-button {
+  background-color: var(--bg-color);
+  color: var(--secondary-text-color);
+  border: 1px solid var(--border-color);
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  transition: background-color 0.2s, color 0.2s;
+}
+.theme-switcher-button:hover {
+  background-color: var(--bg-secondary-color);
+}

@@ -2,36 +2,20 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 100vh; /* Garante que a tela toda seja coberta */
+  min-height: 100vh;
   background-color: var(--bg-color);
-  padding: 20px; /* Adiciona um pouco de espaço nas bordas em telas menores */
-  position: relative; /* Para posicionar o botão do tema absolutamente dentro */
-}
-
-.theme-toggle-button {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  padding: 8px;
-  border-radius: 50%; /* Deixa o fundo do botão circular */
-  transition: background-color 0.3s ease;
-}
-
-.theme-toggle-button:hover {
-  background-color: rgba(0, 0, 0, 0.05); /* Um leve destaque ao passar o mouse */
+  padding: 20px;
 }
 
 .login-container {
   padding: 40px;
-  background-color: var(--card-bg-color);
+  background-color: var(--bg-secondary-color);
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 24px var(--shadow-color);
   width: 100%;
-  max-width: 400px; /* Define uma largura máxima para telas maiores */
+  max-width: 400px;
   text-align: center;
+  border: 1px solid var(--border-color);
 }
 
 .login-container h1 {
@@ -45,54 +29,48 @@
 }
 
 .login-form input {
-  padding: 14px 16px;
-  margin-bottom: 12px;
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 16px;
   border: 1px solid var(--border-color);
   border-radius: 6px;
-  font-size: 16px;
+  font-size: 1rem;
+  background-color: var(--bg-color);
+  color: var(--primary-text-color);
+  transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
 }
 
 .login-form input:focus {
   outline: none;
-  border-color: #1877f2;
-  box-shadow: 0 0 0 2px #e7f3ff;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 25%, transparent);
 }
 
 .login-form button {
-  padding: 14px 16px;
+  padding: 12px 16px;
   border: none;
   border-radius: 6px;
-  background-color: var(--primary-button-bg);
-  color: white;
-  font-size: 18px;
+  background-color: var(--primary-color);
+  color: white; /* Corrigido para branco */
+  font-size: 1rem;
   font-weight: bold;
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: background-color 0.2s;
 }
 
 .login-form button:hover {
-  background-color: var(--primary-button-hover-bg);
+  background-color: var(--primary-color-hover);
 }
 
-/* Media query para telas menores (ex: celulares) */
-@media (max-width: 600px) {
-  .login-container {
-    padding: 30px;
-    margin: 20px; /* Adiciona margem nas laterais em telas pequenas */
-  }
-
-  .login-container h1 {
-    font-size: 24px;
-    margin-bottom: 18px;
-  }
-
-  .login-form input {
-    padding: 12px 14px;
-    font-size: 14px;
-  }
-
-  .login-form button {
-    padding: 12px 14px;
-    font-size: 16px;
-  }
+.forgot-password-link {
+  text-align: center;
+  margin-top: 16px;
+}
+.forgot-password-link a {
+  color: var(--primary-color);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+.forgot-password-link a:hover {
+  text-decoration: underline;
 }

@@ -1,12 +1,14 @@
 import React from 'react';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
-// Componentes de estrutura e autenticação
+// Componentes
 import Layout from './components/layout/layout.jsx';
 import Login from './pages/Login.jsx';
 import ProtectedRoute from './components/auth/ProtectedRoute.jsx';
+import RecuperarSenha from './pages/RecuperarSenha.jsx';
 
-// Importação de todas as páginas da sua aplicação
+// Páginas
+import PaginaInicial from './pages/PaginaInicial.jsx';
 import GestaoDeFolgas from './pages/GestaoDeFolgas.jsx';
 import GestaoDeFerias from './pages/GestaoDeFerias.jsx';
 import Inventario from './pages/Inventario.jsx';
@@ -18,7 +20,6 @@ import Usuarios from './pages/Usuarios.jsx';
 import Configuracoes from './pages/Configuracoes.jsx';
 import Logout from './pages/Logout.jsx';
 
-// Definição de todas as rotas
 const router = createBrowserRouter([
   {
     path: '/',
@@ -28,6 +29,7 @@ const router = createBrowserRouter([
       </ProtectedRoute>
     ),
     children: [
+      { index: true, element: <PaginaInicial /> },
       { path: 'folgas', element: <GestaoDeFolgas /> },
       { path: 'ferias', element: <GestaoDeFerias /> },
       { path: 'inventario', element: <Inventario /> },
@@ -40,10 +42,8 @@ const router = createBrowserRouter([
       { path: 'logout', element: <Logout /> },
     ],
   },
-  {
-    path: '/login',
-    element: <Login />,
-  },
+  { path: '/login', element: <Login /> },
+  { path: '/recuperar-senha', element: <RecuperarSenha /> },
 ]);
 
 function App() {

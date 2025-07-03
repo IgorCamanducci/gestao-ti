@@ -1,52 +1,58 @@
-/* Definição das variáveis de cor para cada tema */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* --- PALETA DE CORES (LARANJA) --- */
 :root {
   /* Tema Claro (Padrão) */
-  --bg-color: #f0f2f5;
-  --primary-text-color: #1c1e21;
-  --card-bg-color: #ffffff;
-  --border-color: #dddfe2;
-  --primary-button-bg: #1877f2;
-  --primary-button-hover-bg: #166fe5;
-  --sidebar-bg: #f4f4f4;
-  --sidebar-link-color: #333;
-  --sidebar-link-hover-bg: #ddd;
+  --bg-color: #f8f9fa;
+  --bg-secondary-color: #ffffff;
+  --primary-text-color: #212529;
+  --secondary-text-color: #6c757d;
+  --border-color: #dee2e6;
+  --primary-color: #E67E22;
+  --primary-color-hover: #D35400;
+  --primary-color-text: #ffffff;
+  --shadow-color: rgba(0, 0, 0, 0.05);
 }
 
 body.dark {
   /* Tema Escuro */
-  --bg-color: #18191a;
-  --primary-text-color: #e4e6eb;
-  --card-bg-color: #242526;
-  --border-color: #3a3b3c;
-  --primary-button-bg: #2d88ff;
-  --primary-button-hover-bg: #3a8ffd;
-  --sidebar-bg: #242526;
-  --sidebar-link-color: #e4e6eb;
-  --sidebar-link-hover-bg: #3a3b3c;
+  --bg-color: #1a1a1a;
+  --bg-secondary-color: #242424;
+  --primary-text-color: #e9ecef;
+  --secondary-text-color: #adb5bd;
+  --border-color: #495057;
+  --primary-color: #E67E22;
+  --primary-color-hover: #D35400;
+  --primary-color-text: #ffffff;
+  --shadow-color: rgba(0, 0, 0, 0.25);
 }
 
 /* --- RESET GLOBAL E ESTILOS BASE --- */
-
-/* Regra de ouro para responsividade:
-   Faz com que o padding e a borda façam parte da largura/altura total, 
-   em vez de serem somados. Resolve o problema da "página maior que a tela". */
 *,
 *::before,
 *::after {
   box-sizing: border-box;
 }
 
-body {
-  margin: 0; /* Remove margens padrão */
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  min-height: 100vh;
+html {
+  font-size: 16px;
+}
 
-  /* Aplica as cores do tema diretamente ao corpo da página,
-     eliminando as bordas brancas. */
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: 'Inter', sans-serif;
   background-color: var(--bg-color);
   color: var(--primary-text-color);
-  
-  /* Melhora a renderização de fontes */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+h1, h2, h3 {
+  margin: 0;
+  font-weight: 700;
+}
+
+h1 { font-size: 2rem; }
+h2 { font-size: 1.5rem; }
+h3 { font-size: 1.25rem; }
