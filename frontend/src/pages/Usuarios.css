@@ -1,0 +1,67 @@
+.user-list-page h1 {
+  margin-bottom: 32px;
+}
+
+.user-table-container {
+  width: 100%;
+  overflow-x: auto; /* Garante que a tabela seja rolável em telas pequenas */
+}
+
+.user-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: var(--bg-secondary-color);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px var(--shadow-color);
+  min-width: 600px; /* Largura mínima para evitar quebra de layout */
+}
+
+.user-table th, .user-table td {
+  padding: 16px 20px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.user-table th {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--secondary-text-color);
+}
+
+.user-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.user-avatar-placeholder {
+  width: 40px;
+  height: 40px;
+  color: var(--secondary-text-color);
+}
+
+.user-name-email {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-name-email .name {
+  font-weight: 600;
+}
+
+.user-name-email .email {
+  font-size: 0.85rem;
+  color: var(--secondary-text-color);
+}

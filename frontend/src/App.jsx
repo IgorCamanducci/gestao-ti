@@ -1,13 +1,14 @@
 import React from 'react';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
-// Componentes
-import Layout from './components/layout/layout.jsx';
+// Componentes de estrutura e autenticação
+import Layout from './components/layout/Layout.jsx';
 import Login from './pages/Login.jsx';
 import ProtectedRoute from './components/auth/ProtectedRoute.jsx';
+import CoordenadorRoute from './components/auth/CoordenadorRoute.jsx';
 import RecuperarSenha from './pages/RecuperarSenha.jsx';
 
-// Páginas
+// Importação de TODAS as páginas da sua aplicação
 import PaginaInicial from './pages/PaginaInicial.jsx';
 import GestaoDeFolgas from './pages/GestaoDeFolgas.jsx';
 import GestaoDeFerias from './pages/GestaoDeFerias.jsx';
@@ -20,14 +21,11 @@ import Usuarios from './pages/Usuarios.jsx';
 import Configuracoes from './pages/Configuracoes.jsx';
 import Logout from './pages/Logout.jsx';
 
+// Definição de TODAS as rotas
 const router = createBrowserRouter([
   {
     path: '/',
-    element: (
-      <ProtectedRoute>
-        <Layout />
-      </ProtectedRoute>
-    ),
+    element: (<ProtectedRoute><Layout /></ProtectedRoute>),
     children: [
       { index: true, element: <PaginaInicial /> },
       { path: 'folgas', element: <GestaoDeFolgas /> },
@@ -37,7 +35,7 @@ const router = createBrowserRouter([
       { path: 'estoque', element: <ControleDeEstoque /> },
       { path: 'turno', element: <TrocaDeTurno /> },
       { path: 'pendencias', element: <Pendencias /> },
-      { path: 'usuarios', element: <Usuarios /> },
+      { path: 'usuarios', element: (<CoordenadorRoute><Usuarios /></CoordenadorRoute>) },
       { path: 'configuracoes', element: <Configuracoes /> },
       { path: 'logout', element: <Logout /> },
     ],

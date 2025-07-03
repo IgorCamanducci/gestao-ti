@@ -1,12 +1,44 @@
-import React, { useState } from 'react';
-import { Outlet, Link, NavLink } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-import { FaUserCircle, FaBars, FaHome, FaCalendarAlt, FaBoxOpen, FaUsers, FaCogs, FaSignOutAlt, FaTasks, FaExchangeAlt, FaWarehouse, FaDesktop } from 'react-icons/fa';
+import React, { useState, useEffect } from 'react';
+import { Outlet, NavLink } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext'; // A importação correta, uma única vez
+
+// Importação dos ícones
+import { 
+  FaUserCircle, 
+  FaBars, 
+  FaHome, 
+  FaCalendarAlt, 
+  FaBoxOpen, 
+  FaUsers, 
+  FaCogs, 
+  FaSignOutAlt, 
+  FaTasks, 
+  FaExchangeAlt, 
+  FaWarehouse, 
+  FaDesktop 
+} from 'react-icons/fa';
+
 import './layout.css';
 
+const getInitialMenuState = () => {
+  const savedState = localStorage.getItem('isMenuCollapsed');
+  return savedState === 'true';
+};
+
 function Layout() {
-  const { profile } = useAuth();
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const { profile, isAuthenticated } = useAuth();
+  
+  // --- NOSSO SENSOR DE DEPURAÇÃO ---
+  console.log('--- RENDERIZANDO O LAYOUT ---');
+  console.log('Está autenticado?', isAuthenticated);
+  console.log('Perfil atual:', profile);
+  // ------------------------------------
+  
+  const [isCollapsed, setIsCollapsed] = useState(getInitialMenuState);
+
+  useEffect(() => {
+    localStorage.setItem('isMenuCollapsed', isCollapsed);
+  }, [isCollapsed]);
 
   const menuItems = [
     { path: '/', name: 'Página Inicial', icon: <FaHome /> },
@@ -17,8 +49,8 @@ function Layout() {
     { path: '/estoque', name: 'Controle de Estoque', icon: <FaWarehouse /> },
     { path: '/turno', name: 'Troca de Turno', icon: <FaExchangeAlt /> },
     { path: '/pendencias', name: 'Pendências', icon: <FaTasks /> },
-    { path: '/usuarios', name: 'Usuários', icon: <FaUsers /> },
-  ];
+    profile?.role === 'coordenador' && { path: '/usuarios', name: 'Usuários', icon: <FaUsers /> },
+  ].filter(Boolean);
 
   return (
     <div className={`app-layout ${isCollapsed ? 'collapsed' : ''}`}>
@@ -39,12 +71,12 @@ function Layout() {
             )}
             <span className="profile-name">{profile?.full_name || 'Usuário'}</span>
           </div>
-
+          
           <ul className="main-nav">
             <li className="separator-nav"></li>
             {menuItems.map(item => (
               <li key={item.name}>
-                <NavLink to={item.path} end>
+                <NavLink to={item.path} end={item.path === '/'}>
                   {item.icon}
                   <span className="link-text">{item.name}</span>
                 </NavLink>

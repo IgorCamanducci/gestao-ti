@@ -8,16 +8,15 @@ export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Função para buscar o perfil do usuário no banco de dados
   const getProfile = async (sessionUser) => {
+    // ... (esta função continua a mesma)
     if (sessionUser) {
       try {
         const { data, error } = await supabase
           .from('profiles')
-          .select(`full_name, avatar_url`)
+          .select(`full_name, avatar_url, role`)
           .eq('id', sessionUser.id)
           .single();
-
         if (error) throw error;
         setProfile(data || null);
       } catch (error) {
@@ -28,36 +27,41 @@ export function AuthProvider({ children }) {
       setProfile(null);
     }
   };
-
+  
   useEffect(() => {
+    // ... (este useEffect continua o mesmo)
     const handleAuthChange = async (session) => {
       const sessionUser = session?.user ?? null;
       setUser(sessionUser);
       await getProfile(sessionUser);
       setLoading(false);
     };
-
     supabase.auth.getSession().then(({ data: { session } }) => {
       handleAuthChange(session);
     });
-
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       handleAuthChange(session);
     });
-
     return () => {
       authListener.subscription?.unsubscribe();
     };
   }, []);
+
+  // CORREÇÃO: Garantimos que o perfil também seja limpo no logout.
+  const logout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    setProfile(null); // <-- LINHA ADICIONADA
+  };
 
   const value = {
     user,
     profile,
     loading,
     isAuthenticated: !!user,
-    logout: () => supabase.auth.signOut(),
+    logout: logout, // Usando a nova função
     login: (email, password) => supabase.auth.signInWithPassword({ email, password }),
-    refreshProfile: () => getProfile(user), // <-- NOVA FUNÇÃO EXPOSTA
+    refreshProfile: () => getProfile(user),
   };
 
   return (

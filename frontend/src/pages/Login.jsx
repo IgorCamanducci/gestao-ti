@@ -9,9 +9,10 @@ function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
+  // Este useEffect agora redireciona para a página certa
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/folgas');
+      navigate('/'); // Redireciona para a página inicial
     }
   }, [isAuthenticated, navigate]);
 
@@ -21,7 +22,7 @@ function Login() {
     if (error) {
       alert('Erro no login: ' + error.message);
     }
-    // O redirecionamento é feito pelo useEffect acima
+    // O redirecionamento em si é feito pelo useEffect acima
   };
 
   return (
