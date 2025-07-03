@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 import ThemeSwitcher from '../components/ui/ThemeSwitcher';
 import { FaUserCircle } from 'react-icons/fa';
+import toast from 'react-hot-toast'; // Importa a função toast
 import './Configuracoes.css';
 
 function Configuracoes() {
@@ -23,7 +24,7 @@ function Configuracoes() {
     }
   }, [profile]);
 
-  // Função que salva o nome
+  // Função que salva nome e futuramente a foto
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -33,15 +34,13 @@ function Configuracoes() {
         full_name: fullName,
         updated_at: new Date(),
       };
-      // CORREÇÃO: Usando .update() em vez de .upsert() para evitar erro de RLS
       const { error } = await supabase.from('profiles').update(updates).eq('id', user.id);
-
       if (error) throw error;
       
-      alert('Perfil atualizado com sucesso!');
+      toast.success('Perfil atualizado com sucesso!');
       await refreshProfile();
     } catch (error) {
-      alert('Erro ao atualizar o perfil: ' + error.message);
+      toast.error('Erro ao atualizar o perfil: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -70,9 +69,10 @@ function Configuracoes() {
       if (updateError) throw updateError;
 
       await refreshProfile();
-      alert('Avatar atualizado!');
+      toast.success('Avatar atualizado com sucesso!');
+
     } catch (error) {
-      alert('Erro no upload do avatar: ' + error.message);
+      toast.error('Erro no upload do avatar: ' + error.message);
     } finally {
       setUploading(false);
     }
@@ -82,22 +82,24 @@ function Configuracoes() {
   const handlePasswordChange = async (e) => {
     e.preventDefault();
     if (password !== confirmPassword) {
-      alert("As senhas não coincidem!");
+      toast.error("As senhas não coincidem!");
       return;
     }
     if (password.length < 6) {
-      alert("A senha deve ter no mínimo 6 caracteres.");
+      toast.error("A senha deve ter no mínimo 6 caracteres.");
       return;
     }
+
     setLoading(true);
+    const toastId = toast.loading('Alterando senha...');
     try {
       const { error } = await supabase.auth.updateUser({ password: password });
       if (error) throw error;
-      alert('Senha alterada com sucesso!');
+      toast.success('Senha alterada com sucesso!', { id: toastId });
       setPassword('');
       setConfirmPassword('');
     } catch (error) {
-      alert('Erro ao alterar a senha: ' + error.message);
+      toast.error('Erro ao alterar a senha: ' + error.message, { id: toastId });
     } finally {
       setLoading(false);
     }

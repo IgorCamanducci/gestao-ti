@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext'; // A importação correta, uma única vez
+import { useAuth } from '../../context/AuthContext';
+import { Toaster } from 'react-hot-toast'; // Importação para as notificações
 
-// Importação dos ícones
+// Importação de todos os ícones
 import { 
   FaUserCircle, 
   FaBars, 
@@ -20,26 +21,21 @@ import {
 
 import './layout.css';
 
+// Função que lê o estado inicial do menu no localStorage
 const getInitialMenuState = () => {
   const savedState = localStorage.getItem('isMenuCollapsed');
   return savedState === 'true';
 };
 
 function Layout() {
-  const { profile, isAuthenticated } = useAuth();
-  
-  // --- NOSSO SENSOR DE DEPURAÇÃO ---
-  console.log('--- RENDERIZANDO O LAYOUT ---');
-  console.log('Está autenticado?', isAuthenticated);
-  console.log('Perfil atual:', profile);
-  // ------------------------------------
-  
+  const { profile } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(getInitialMenuState);
 
   useEffect(() => {
     localStorage.setItem('isMenuCollapsed', isCollapsed);
   }, [isCollapsed]);
 
+  // Lista de itens do menu principal, com a lógica para o perfil de Coordenador
   const menuItems = [
     { path: '/', name: 'Página Inicial', icon: <FaHome /> },
     { path: '/folgas', name: 'Gestão de Folgas', icon: <FaCalendarAlt /> },
@@ -101,6 +97,30 @@ function Layout() {
         </ul>
       </nav>
       <main className="content">
+        {/* Componente que vai renderizar as notificações na tela */}
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 4000,
+            style: {
+              background: 'var(--bg-secondary-color)',
+              color: 'var(--primary-text-color)',
+              border: '1px solid var(--border-color)',
+            },
+            success: {
+              iconTheme: {
+                primary: '#16a34a',
+                secondary: 'white',
+              },
+            },
+            error: {
+              iconTheme: {
+                primary: '#dc2626',
+                secondary: 'white',
+              },
+            },
+          }}
+        />
         <Outlet />
       </main>
     </div>
