@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
+import ReactDOM from 'react-dom';
 import { supabase } from '../lib/supabaseClient';
 import { FaUserCircle, FaPlus } from 'react-icons/fa';
 import { HiDotsVertical } from 'react-icons/hi';
@@ -9,6 +10,33 @@ import './Usuarios.css';
 const formatRole = (role) => {
   if (!role) return '';
   return role.charAt(0).toUpperCase() + role.slice(1);
+};
+
+// --- Componente para o Menu de Ações com Portal ---
+const ActionsMenu = ({ user, position, onClose, onEdit }) => {
+  const menuRef = useRef();
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        onClose();
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [onClose]);
+
+  return ReactDOM.createPortal(
+    <div
+      ref={menuRef}
+      className="actions-menu"
+      style={{ top: position.top, left: position.left }}
+    >
+      <button onClick={() => onEdit(user)}>Editar</button>
+      {/* Futuras ações como 'Resetar Senha' ou 'Deletar' virão aqui */}
+    </div>,
+    document.body
+  );
 };
 
 // --- Componente do Modal de Edição ---
@@ -35,12 +63,12 @@ const EditUserModal = ({ user, onClose, onSave }) => {
             <input type="email" value={user.email} disabled />
           </div>
           <div className="form-group">
-            <label htmlFor="fullName">Nome Completo</label>
-            <input id="fullName" type="text" value={fullName} onChange={e => setFullName(e.target.value)} />
+            <label htmlFor="edit-fullName">Nome Completo</label>
+            <input id="edit-fullName" type="text" value={fullName} onChange={e => setFullName(e.target.value)} />
           </div>
           <div className="form-group">
-            <label htmlFor="role">Perfil</label>
-            <select id="role" value={role} onChange={e => setRole(e.target.value)}>
+            <label htmlFor="edit-role">Perfil</label>
+            <select id="edit-role" value={role} onChange={e => setRole(e.target.value)}>
               <option value="atleta">Atleta</option>
               <option value="coordenador">Coordenador</option>
             </select>
@@ -68,9 +96,11 @@ const AddUserModal = ({ onClose, onSave }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    await onSave({ email, password, fullName, role });
+    const success = await onSave({ email, password, fullName, role });
     setLoading(false);
-    // Não fecha o modal em caso de erro, apenas em sucesso que será tratado na função onSave
+    if (success) {
+      onClose();
+    }
   };
 
   return (
@@ -115,8 +145,7 @@ function Usuarios() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
-  const [openMenuId, setOpenMenuId] = useState(null);
+  const [menuState, setMenuState] = useState({ user: null, position: null });
   const [editingUser, setEditingUser] = useState(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
@@ -140,16 +169,10 @@ function Usuarios() {
   const handleUpdateUser = async (userId, { fullName, role }) => {
     const toastId = toast.loading('Atualizando usuário...');
     try {
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ full_name: fullName })
-        .eq('id', userId);
+      const { error: profileError } = await supabase.from('profiles').update({ full_name: fullName }).eq('id', userId);
       if (profileError) throw profileError;
 
-      const { error: roleError } = await supabase.rpc('update_user_role', {
-        user_id: userId,
-        new_role: role,
-      });
+      const { error: roleError } = await supabase.rpc('update_user_role', { user_id: userId, new_role: role });
       if (roleError) throw roleError;
       
       toast.success('Usuário atualizado com sucesso!', { id: toastId });
@@ -163,23 +186,26 @@ function Usuarios() {
     const toastId = toast.loading('Criando novo usuário...');
     try {
       const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-            role: role,
-          },
-        },
+        email, password, options: { data: { full_name: fullName, role: role } },
       });
       if (error) throw error;
       
       toast.success('Usuário criado com sucesso!', { id: toastId });
-      fetchUsers(); // Recarrega a lista para mostrar o novo usuário
-      setIsAddModalOpen(false); // Fecha o modal após o sucesso
+      fetchUsers();
+      return true; // Indica sucesso para fechar o modal
     } catch (error) {
       toast.error('Erro ao criar usuário: ' + error.message, { id: toastId });
+      return false; // Indica falha para manter o modal aberto
     }
+  };
+  
+  const handleMenuClick = (user, event) => {
+    event.stopPropagation();
+    const rect = event.currentTarget.getBoundingClientRect();
+    setMenuState({
+      user,
+      position: { top: rect.bottom + window.scrollY, left: rect.left + window.scrollX - 160 },
+    });
   };
 
   if (loading) return <div>Carregando usuários...</div>;
@@ -221,20 +247,27 @@ function Usuarios() {
                 </td>
                 <td>{formatRole(user.role)}</td>
                 <td className="actions-cell">
-                  <button className="actions-button" onClick={() => setOpenMenuId(openMenuId === user.id ? null : user.id)}>
+                  <button className="actions-button" onClick={(e) => handleMenuClick(user, e)}>
                     <HiDotsVertical size={20} />
                   </button>
-                  {openMenuId === user.id && (
-                    <div className="actions-menu">
-                      <button onClick={() => { setEditingUser(user); setOpenMenuId(null); }}>Editar</button>
-                    </div>
-                  )}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      {menuState.user && (
+        <ActionsMenu
+          user={menuState.user}
+          position={menuState.position}
+          onClose={() => setMenuState({ user: null, position: null })}
+          onEdit={(userToEdit) => {
+            setEditingUser(userToEdit);
+            setMenuState({ user: null, position: null });
+          }}
+        />
+      )}
 
       {editingUser && (
         <EditUserModal 
@@ -243,6 +276,7 @@ function Usuarios() {
           onSave={handleUpdateUser}
         />
       )}
+      
       {isAddModalOpen && (
         <AddUserModal 
           onClose={() => setIsAddModalOpen(false)}

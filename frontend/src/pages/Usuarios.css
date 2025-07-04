@@ -12,7 +12,6 @@
   border-collapse: collapse;
   background-color: var(--bg-secondary-color);
   border-radius: 8px;
-  overflow: hidden;
   box-shadow: 0 4px 12px var(--shadow-color);
   min-width: 600px;
 }
@@ -67,7 +66,6 @@
 }
 
 .actions-cell {
-  position: relative;
   text-align: right;
   width: 60px;
 }
@@ -88,16 +86,15 @@
   background-color: var(--bg-color);
 }
 
+/* O menu agora usa position: fixed para flutuar sobre tudo */
 .actions-menu {
-  position: absolute;
-  right: 20px;
-  top: 55px;
+  position: fixed;
   background-color: var(--bg-secondary-color);
   border: 1px solid var(--border-color);
   border-radius: 8px;
   box-shadow: 0 4px 12px var(--shadow-color);
   padding: 8px;
-  z-index: 10;
+  z-index: 1001; /* Z-index alto para ficar sobre o overlay do modal */
   width: 180px;
 }
 
@@ -181,10 +178,14 @@
   font-size: 1rem;
   font-weight: bold;
   cursor: pointer;
-  /* CORREÇÃO: Sintaxe da transição corrigida */
   transition: background-color 0.2s ease-in-out;
 }
 
 .form-button:hover {
   background-color: var(--primary-color-hover);
+}
+
+.form-button:disabled {
+  background-color: var(--secondary-text-color);
+  cursor: not-allowed;
 }

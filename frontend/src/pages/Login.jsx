@@ -2,27 +2,34 @@ import React, { useState, useEffect } from 'react';
 import './Login.css';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
 function Login() {
   const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  // Este useEffect agora redireciona para a página certa
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/'); // Redireciona para a página inicial
+      navigate('/');
     }
   }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    const { error } = await login(email, password);
-    if (error) {
-      alert('Erro no login: ' + error.message);
+    setLoading(true);
+    try {
+      const { error } = await login(email, password);
+      if (error) {
+        throw error;
+      }
+    } catch (error) {
+      toast.error(error.message || "E-mail ou senha inválidos.");
+    } finally {
+      setLoading(false);
     }
-    // O redirecionamento em si é feito pelo useEffect acima
   };
 
   return (
@@ -30,9 +37,11 @@ function Login() {
       <div className="login-container">
         <h1>Gestão</h1>
         <form className="login-form" onSubmit={handleSubmit}>
-          <input type="email" placeholder="E-mail" value={email} onChange={(e) => setEmail(e.target.value)} required />
-          <input type="password" placeholder="Senha" value={password} onChange={(e) => setPassword(e.target.value)} required />
-          <button type="submit">Entrar</button>
+          <input type="email" placeholder="E-mail" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={loading} />
+          <input type="password" placeholder="Senha" value={password} onChange={(e) => setPassword(e.target.value)} required disabled={loading} />
+          <button type="submit" disabled={loading}>
+            {loading ? 'Entrando...' : 'Entrar'}
+          </button>
         </form>
         <div className="forgot-password-link">
           <Link to="/recuperar-senha">Esqueceu a senha?</Link>
