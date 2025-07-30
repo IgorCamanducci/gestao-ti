@@ -12,20 +12,20 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
-    # Define a variável de ambiente com o nosso segredo
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      # Adicionamos o nosso novo segredo como uma variável de ambiente
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
       - name: Setup Supabase CLI
-        # Passo 1: Instala a ferramenta do Supabase no ambiente
         uses: supabase/setup-cli@v1
         with:
-          version: latest # Garante que estamos usando a versão mais recente
+          version: latest
 
       - name: Deploy Edge Function
-        # Passo 2: Executa o comando de deploy que já conhecemos
-        run: supabase functions deploy --project-ref nasqvtapxylupbfxucn --no-verify-jwt reset-user-password
+        # O comando agora usa a variável de ambiente '$' em vez do texto fixo
+        run: supabase functions deploy --project-ref $SUPABASE_PROJECT_REF --no-verify-jwt reset-user-password
