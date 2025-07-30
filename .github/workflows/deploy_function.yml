@@ -16,7 +16,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Deploy Supabase Edge Function
-        uses: supabase/actions/cli@v1.1.0
+        uses: supabase/actions/cli@v1
         with:
           access-token: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           command: functions deploy --project-ref nasqvtapxylupbfxucn --no-verify-jwt reset-user-password
