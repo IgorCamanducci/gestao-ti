@@ -13,7 +13,7 @@ const formatRole = (role) => {
 };
 
 // --- Componente para o Menu de Ações com Portal ---
-const ActionsMenu = ({ user, position, onClose, onEdit }) => {
+const ActionsMenu = ({ user, position, onClose, onEdit, onResetPassword }) => {
   const menuRef = useRef();
 
   useEffect(() => {
@@ -33,7 +33,7 @@ const ActionsMenu = ({ user, position, onClose, onEdit }) => {
       style={{ top: position.top, left: position.left }}
     >
       <button onClick={() => onEdit(user)}>Editar</button>
-      {/* Futuras ações como 'Resetar Senha' ou 'Deletar' virão aqui */}
+      <button onClick={() => onResetPassword(user)}>Resetar Senha</button>
     </div>,
     document.body
   );
@@ -192,10 +192,27 @@ function Usuarios() {
       
       toast.success('Usuário criado com sucesso!', { id: toastId });
       fetchUsers();
-      return true; // Indica sucesso para fechar o modal
+      return true;
     } catch (error) {
       toast.error('Erro ao criar usuário: ' + error.message, { id: toastId });
-      return false; // Indica falha para manter o modal aberto
+      return false;
+    }
+  };
+  
+  const handleResetPassword = async (user) => {
+    if (!window.confirm(`Tem certeza que deseja enviar um e-mail de recuperação de senha para ${user.email}?`)) {
+      return;
+    }
+
+    const toastId = toast.loading('Enviando e-mail de recuperação...');
+    try {
+      const { error } = await supabase.functions.invoke('reset-user-password', {
+        body: { user_id: user.id },
+      });
+      if (error) throw error;
+      toast.success('E-mail de recuperação enviado!', { id: toastId });
+    } catch (error) {
+      toast.error('Erro: ' + error.message, { id: toastId });
     }
   };
   
@@ -264,6 +281,10 @@ function Usuarios() {
           onClose={() => setMenuState({ user: null, position: null })}
           onEdit={(userToEdit) => {
             setEditingUser(userToEdit);
+            setMenuState({ user: null, position: null });
+          }}
+          onResetPassword={(userToReset) => {
+            handleResetPassword(userToReset);
             setMenuState({ user: null, position: null });
           }}
         />

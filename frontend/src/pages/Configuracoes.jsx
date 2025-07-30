@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 import ThemeSwitcher from '../components/ui/ThemeSwitcher';
 import { FaUserCircle } from 'react-icons/fa';
-import toast from 'react-hot-toast'; // Importa a função toast
+import toast from 'react-hot-toast';
 import './Configuracoes.css';
 
 function Configuracoes() {
@@ -24,30 +24,34 @@ function Configuracoes() {
     }
   }, [profile]);
 
-  // Função que salva nome e futuramente a foto
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
     setLoading(true);
+    const toastId = toast.loading('Salvando alterações...');
     try {
       const updates = {
-        id: user.id,
         full_name: fullName,
         updated_at: new Date(),
       };
-      const { error } = await supabase.from('profiles').update(updates).eq('id', user.id);
+
+      const { error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', user.id);
+
       if (error) throw error;
       
-      toast.success('Perfil atualizado com sucesso!');
+      toast.success('Perfil atualizado com sucesso!', { id: toastId });
       await refreshProfile();
     } catch (error) {
-      toast.error('Erro ao atualizar o perfil: ' + error.message);
+      toast.error('Erro ao atualizar o perfil: ' + error.message, { id: toastId });
     } finally {
       setLoading(false);
     }
   };
 
-  // Função que salva a foto
   const uploadAvatar = async (event) => {
+    const toastId = toast.loading('Enviando imagem...');
     try {
       setUploading(true);
       if (!event.target.files || event.target.files.length === 0) {
@@ -59,26 +63,31 @@ function Configuracoes() {
       const fileName = `${Date.now()}.${fileExt}`;
       const filePath = `${user.id}/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file);
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file);
+
       if (uploadError) throw uploadError;
 
       const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
       const publicUrl = data.publicUrl;
       
-      const { error: updateError } = await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', user.id);
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('id', user.id);
+      
       if (updateError) throw updateError;
 
       await refreshProfile();
-      toast.success('Avatar atualizado com sucesso!');
-
+      toast.success('Avatar atualizado!', { id: toastId });
     } catch (error) {
-      toast.error('Erro no upload do avatar: ' + error.message);
+      toast.error('Erro no upload do avatar: ' + error.message, { id: toastId });
     } finally {
       setUploading(false);
     }
   };
   
-  // Função para alterar a senha
   const handlePasswordChange = async (e) => {
     e.preventDefault();
     if (password !== confirmPassword) {
@@ -145,11 +154,11 @@ function Configuracoes() {
         <form onSubmit={handlePasswordChange}>
           <div className="form-group">
             <label htmlFor="newPassword">Nova Senha</label>
-            <input id="newPassword" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <input id="newPassword" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required />
           </div>
           <div className="form-group">
             <label htmlFor="confirmPassword">Confirmar Nova Senha</label>
-            <input id="confirmPassword" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
+            <input id="confirmPassword" type="password" placeholder="••••••••" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
           </div>
           <button type="submit" className="form-button" disabled={loading}>
             {loading ? 'Alterando...' : 'Alterar Senha'}

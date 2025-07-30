@@ -1,0 +1,22 @@
+name: Deploy Supabase Edge Function
+
+on:
+  push:
+    branches:
+      - main # Roda apenas quando houver um 'push' na branch principal
+    paths:
+      - 'supabase/functions/**' # Roda apenas se houver mudanças na pasta de funções
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Deploy Supabase Edge Function
+        uses: supabase/actions/cli@v1.1.0
+        with:
+          access-token: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          command: functions deploy --project-ref nasqvtapxylupbfxucn --no-verify-jwt reset-user-password
