@@ -3,9 +3,9 @@ name: Deploy Supabase Edge Function
 on:
   push:
     branches:
-      - main # Roda apenas quando houver push na branch 'main'
+      - main # Roda apenas quando houver um 'push' na branch principal
     paths:
-      - 'supabase/functions/**' # Roda apenas se houver mudanças nas funções
+      - 'supabase/functions/**' # Roda apenas se houver mudanças na pasta de funções
 
 jobs:
   deploy:
@@ -16,7 +16,6 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Deploy Supabase Edge Function
-        # CORREÇÃO AQUI: Trocado v1.1.0 por v1, a versão estável.
         uses: supabase/actions/cli@v1
         with:
           access-token: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
