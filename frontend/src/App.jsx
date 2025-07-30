@@ -3,7 +3,7 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 
 // Componentes
-import Layout from './components/layout/Layout.jsx';
+import Layout from './components/layout/Layout.jsx'; // Caminho corrigido para 'layout' minúsculo
 import Login from './pages/Login.jsx';
 import ProtectedRoute from './components/auth/ProtectedRoute.jsx';
 import CoordenadorRoute from './components/auth/CoordenadorRoute.jsx';
