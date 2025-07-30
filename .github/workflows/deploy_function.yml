@@ -3,9 +3,10 @@ name: Deploy Supabase Edge Function
 on:
   push:
     branches:
-      - main # Roda apenas quando houver um 'push' na branch principal
+      - main
     paths:
-      - 'supabase/functions/**' # Roda apenas se houver mudanças na pasta de funções
+      - 'supabase/functions/**'  # Roda se houver mudanças nas funções
+      - '.github/workflows/**' # Roda também se o próprio workflow for alterado
 
 jobs:
   deploy:
