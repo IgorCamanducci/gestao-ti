@@ -2,7 +2,7 @@ import React from 'react';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 
-// Componentes de estrutura e autenticação
+// Componentes
 import Layout from './components/layout/Layout.jsx';
 import Login from './pages/Login.jsx';
 import ProtectedRoute from './components/auth/ProtectedRoute.jsx';
@@ -10,7 +10,7 @@ import CoordenadorRoute from './components/auth/CoordenadorRoute.jsx';
 import RecuperarSenha from './pages/RecuperarSenha.jsx';
 import UpdatePassword from './pages/UpdatePassword.jsx';
 
-// Importação de todas as páginas da sua aplicação
+// Páginas
 import PaginaInicial from './pages/PaginaInicial.jsx';
 import GestaoDeFolgas from './pages/GestaoDeFolgas.jsx';
 import GestaoDeFerias from './pages/GestaoDeFerias.jsx';
@@ -23,7 +23,6 @@ import Usuarios from './pages/Usuarios.jsx';
 import Configuracoes from './pages/Configuracoes.jsx';
 import Logout from './pages/Logout.jsx';
 
-// Definição de todas as rotas
 const router = createBrowserRouter([
   {
     path: '/',
