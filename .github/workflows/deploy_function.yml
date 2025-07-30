@@ -14,7 +14,6 @@ jobs:
 
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-      # Adicionamos o nosso novo segredo como uma variável de ambiente
       SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
 
     steps:
@@ -27,5 +26,4 @@ jobs:
           version: latest
 
       - name: Deploy Edge Function
-        # O comando agora usa a variável de ambiente '$' em vez do texto fixo
         run: supabase functions deploy --project-ref $SUPABASE_PROJECT_REF --no-verify-jwt reset-user-password
