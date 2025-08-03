@@ -1,0 +1,114 @@
+.assets-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.search-and-actions {
+  display: flex;
+  gap: 16px;
+  flex-grow: 1;
+  min-width: 300px;
+}
+
+.search-input {
+  width: 100%;
+  max-width: 400px;
+  padding: 10px 16px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-secondary-color);
+  color: var(--primary-text-color);
+  font-size: 1rem;
+}
+
+/* Estilo das Abas (Tabs) */
+.asset-tabs {
+  display: flex;
+  border-bottom: 2px solid var(--border-color);
+  margin-bottom: 24px;
+  overflow-x: auto;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.asset-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+
+.asset-tabs button {
+  padding: 12px 20px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  font-weight: 600;
+  color: var(--secondary-text-color);
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  white-space: nowrap;
+  transition: all 0.2s ease-in-out;
+}
+
+.asset-tabs button:hover {
+    background-color: var(--bg-color);
+}
+
+.asset-tabs button.active {
+  color: var(--primary-color);
+  border-bottom-color: var(--primary-color);
+}
+
+/* Tabela de Ativos */
+.asset-table-container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.asset-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: var(--bg-secondary-color);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px var(--shadow-color);
+  min-width: 800px;
+}
+
+.asset-table th, .asset-table td {
+  padding: 16px 20px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+}
+
+.asset-table th {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--secondary-text-color);
+}
+
+.asset-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* --- AJUSTES DE RESPONSIVIDADE --- */
+@media (max-width: 768px) {
+  .assets-page-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-and-actions {
+    flex-direction: column;
+  }
+
+  .search-input {
+    max-width: 100%;
+  }
+
+  .asset-table {
+    min-width: 0; /* Permite que a tabela encolha */
+  }
+}

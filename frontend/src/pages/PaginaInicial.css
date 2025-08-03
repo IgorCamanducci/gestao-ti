@@ -1,0 +1,74 @@
+.dashboard-page {
+  /* Estilos gerais da página */
+}
+
+.dashboard-header {
+  margin-bottom: 32px;
+}
+
+.greeting {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.date-time {
+  font-size: 1rem;
+  color: var(--secondary-text-color);
+}
+
+.stats-grid {
+  display: grid;
+  /* Cria colunas responsivas */
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 24px;
+}
+
+.stat-card {
+  background-color: var(--bg-secondary-color);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 4px 12px var(--shadow-color);
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-card-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  color: var(--secondary-text-color);
+}
+
+.stat-card-icon {
+  font-size: 1.5rem;
+  padding: 12px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stat-card-title {
+  font-weight: 600;
+}
+
+.stat-card-value {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-top: 16px;
+}
+
+/* Cores específicas para cada ícone */
+.icon-folgas { background-color: #ffc10720; color: #ffc107; }
+.icon-ferias { background-color: #17a2b820; color: #17a2b8; }
+.icon-trocas { background-color: #6f42c120; color: #6f42c1; }
+.icon-pendencias { background-color: #dc354520; color: #dc3545; }
+.icon-users { background-color: #28a74520; color: #28a745; }
+
+.quick-actions {
+    margin-top: 32px;
+    display: flex;
+    gap: 16px;
+}

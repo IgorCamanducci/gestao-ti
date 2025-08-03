@@ -3,7 +3,7 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 
 // Componentes
-import Layout from './components/layout/Layout.jsx'; // Caminho corrigido para 'layout' minúsculo
+import Layout from './components/layout/Layout.jsx';
 import Login from './pages/Login.jsx';
 import ProtectedRoute from './components/auth/ProtectedRoute.jsx';
 import CoordenadorRoute from './components/auth/CoordenadorRoute.jsx';
@@ -21,6 +21,8 @@ import TrocaDeTurno from './pages/TrocaDeTurno.jsx';
 import Pendencias from './pages/Pendencias.jsx';
 import Usuarios from './pages/Usuarios.jsx';
 import Configuracoes from './pages/Configuracoes.jsx';
+import GerenciarCategorias from './pages/GerenciarCategorias.jsx';
+import Historico from './pages/Historico.jsx'; // <-- 1. Importa a nova página
 import Logout from './pages/Logout.jsx';
 
 const router = createBrowserRouter([
@@ -37,7 +39,9 @@ const router = createBrowserRouter([
       { path: 'turno', element: <TrocaDeTurno /> },
       { path: 'pendencias', element: <Pendencias /> },
       { path: 'usuarios', element: (<CoordenadorRoute><Usuarios /></CoordenadorRoute>) },
+      { path: 'historico', element: <Historico /> }, // <-- 2. Adiciona a nova rota
       { path: 'configuracoes', element: <Configuracoes /> },
+      { path: 'configuracoes/categorias-ativos', element: <GerenciarCategorias /> },
       { path: 'logout', element: <Logout /> },
     ],
   },

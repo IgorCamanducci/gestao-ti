@@ -1,0 +1,45 @@
+.history-page h1 {
+  margin-bottom: 32px;
+}
+
+/* Reutilizando a maior parte dos estilos da tabela de usuários */
+.history-table-container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: var(--bg-secondary-color);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px var(--shadow-color);
+  min-width: 800px;
+}
+
+.history-table th, .history-table td {
+  padding: 16px 20px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+}
+
+.history-table th {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--secondary-text-color);
+}
+
+.history-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.event-Retirada {
+  color: #dc3545; /* Vermelho */
+  font-weight: 600;
+}
+
+.event-Devolução {
+  color: #28a745; /* Verde */
+  font-weight: 600;
+}

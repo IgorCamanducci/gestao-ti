@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+
+// Importação de todos os ícones
 import { 
   FaUserCircle, 
   FaBars, 
@@ -13,8 +15,10 @@ import {
   FaTasks, 
   FaExchangeAlt, 
   FaWarehouse, 
-  FaDesktop 
+  FaDesktop,
+  FaHistory // <-- 1. Importa o ícone de Histórico
 } from 'react-icons/fa';
+
 import './layout.css';
 
 const getInitialMenuState = () => {
@@ -40,6 +44,7 @@ function Layout() {
     { path: '/turno', name: 'Troca de Turno', icon: <FaExchangeAlt /> },
     { path: '/pendencias', name: 'Pendências', icon: <FaTasks /> },
     profile?.role === 'coordenador' && { path: '/usuarios', name: 'Usuários', icon: <FaUsers /> },
+    { path: '/historico', name: 'Histórico', icon: <FaHistory /> }, // <-- 2. Adiciona o novo item de menu
   ].filter(Boolean);
 
   return (

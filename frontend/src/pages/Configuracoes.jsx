@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 import ThemeSwitcher from '../components/ui/ThemeSwitcher';
@@ -169,6 +170,13 @@ function Configuracoes() {
       <section className="settings-section">
         <h2>Aparência</h2>
         <ThemeSwitcher />
+      </section>
+      
+      <section className="settings-section">
+        <h2>Gerenciamento do Sistema</h2>
+        <Link to="/configuracoes/categorias-ativos" className="form-button">
+            Gerenciar Categorias de Ativos
+        </Link>
       </section>
     </div>
   );
