@@ -1,18 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
-import { FaUsers, FaCalendarAlt, FaExchangeAlt, FaTasks } from 'react-icons/fa';
+import { FaUsers, FaCalendarAlt, FaExchangeAlt, FaTasks, FaBoxOpen, FaDesktop, FaWarehouse } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import './PaginaInicial.css';
 
 // --- Componente para os Cards de Estatística ---
-const StatCard = ({ title, value, icon, iconClass }) => (
-  <div className="stat-card">
-    <div className="stat-card-header">
-      <div className={`stat-card-icon ${iconClass}`}>{icon}</div>
-      <span className="stat-card-title">{title}</span>
+const StatCard = ({ title, value, icon, type = 'primary' }) => (
+  <div className={`stat-card ${type}`}>
+    <div className="stat-value">{value || 0}</div>
+    <div className="stat-label">{title}</div>
+    <div className="stat-description">
+      {icon} {title.toLowerCase()}
     </div>
-    <span className="stat-card-value">{value}</span>
   </div>
 );
 
@@ -49,8 +49,19 @@ function PaginaInicial() {
         if (error) throw error;
         setStats(data[0]);
       } catch (error) {
-        toast.error('Erro ao carregar dados do dashboard.');
-        console.error(error);
+        console.error('Erro ao carregar dados do dashboard:', error);
+        // Definir valores padrão em caso de erro
+        setStats({
+          total_users: 0,
+          pending_folgas: 0,
+          pending_ferias: 0,
+          pending_trocas: 0,
+          pending_pendencias: 0,
+          my_pending_folgas: 0,
+          my_pending_ferias: 0,
+          my_pending_trocas: 0,
+          my_pending_pendencias: 0
+        });
       } finally {
         setLoading(false);
       }
@@ -63,35 +74,179 @@ function PaginaInicial() {
     timeStyle: 'short',
   });
 
-  if (loading) return <div>Carregando dashboard...</div>;
+  if (loading) {
+    return (
+      <div className="dashboard-container">
+        <div className="loading-state">Carregando dashboard...</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="dashboard-page">
+    <div className="dashboard-container">
       <div className="dashboard-header">
-        <h1 className="greeting">{greeting}, {profile?.full_name || 'Usuário'}!</h1>
-        <p className="date-time">{dateTimeFormatter.format(currentDateTime)}</p>
+        <h1 className="dashboard-title">{greeting}, {profile?.full_name || 'Usuário'}!</h1>
+        <p className="dashboard-subtitle">{dateTimeFormatter.format(currentDateTime)}</p>
       </div>
 
       {/* Renderização condicional baseada no papel do usuário */}
       {profile?.role === 'coordenador' ? (
-        <div className="stats-grid">
-          <StatCard title="Total de Usuários" value={stats?.total_users} icon={<FaUsers />} iconClass="icon-users" />
-          <StatCard title="Folgas Pendentes" value={stats?.pending_folgas} icon={<FaCalendarAlt />} iconClass="icon-folgas" />
-          <StatCard title="Férias Pendentes" value={stats?.pending_ferias} icon={<FaCalendarAlt />} iconClass="icon-ferias" />
-          <StatCard title="Trocas Pendentes" value={stats?.pending_trocas} icon={<FaExchangeAlt />} iconClass="icon-trocas" />
-          <StatCard title="Pendências Abertas" value={stats?.pending_pendencias} icon={<FaTasks />} iconClass="icon-pendencias" />
-        </div>
+        <>
+          <div className="dashboard-stats">
+            <StatCard 
+              title="Total de Usuários" 
+              value={stats?.total_users} 
+              icon={<FaUsers />} 
+              type="primary" 
+            />
+            <StatCard 
+              title="Folgas Pendentes" 
+              value={stats?.pending_folgas} 
+              icon={<FaCalendarAlt />} 
+              type="warning" 
+            />
+            <StatCard 
+              title="Férias Pendentes" 
+              value={stats?.pending_ferias} 
+              icon={<FaCalendarAlt />} 
+              type="info" 
+            />
+            <StatCard 
+              title="Trocas Pendentes" 
+              value={stats?.pending_trocas} 
+              icon={<FaExchangeAlt />} 
+              type="warning" 
+            />
+            <StatCard 
+              title="Pendências Abertas" 
+              value={stats?.pending_pendencias} 
+              icon={<FaTasks />} 
+              type="info" 
+            />
+          </div>
+
+          <div className="dashboard-sections">
+            <div className="section-card">
+              <div className="section-header">
+                <h3 className="section-title">
+                  <span className="section-icon">📊</span>
+                  Visão Geral do Sistema
+                </h3>
+              </div>
+              <div className="section-content">
+                <p>Bem-vindo ao painel de controle do sistema de gestão. Aqui você pode acompanhar todas as atividades e pendências dos usuários.</p>
+                <p>Use o menu lateral para acessar as diferentes funcionalidades disponíveis.</p>
+              </div>
+              <div className="quick-actions">
+                <Link to="/usuarios" className="quick-action-btn">
+                  <FaUsers /> Gerenciar Usuários
+                </Link>
+                <Link to="/folgas" className="quick-action-btn">
+                  <FaCalendarAlt /> Gestão de Folgas
+                </Link>
+                <Link to="/ferias" className="quick-action-btn">
+                  <FaCalendarAlt /> Gestão de Férias
+                </Link>
+              </div>
+            </div>
+
+            <div className="section-card">
+              <div className="section-header">
+                <h3 className="section-title">
+                  <span className="section-icon">⚙️</span>
+                  Controles do Sistema
+                </h3>
+              </div>
+              <div className="section-content">
+                <p>Acesse os controles de ativos e estoque para gerenciar equipamentos e materiais da empresa.</p>
+                <p>Mantenha o inventário atualizado e controle o uso dos recursos.</p>
+              </div>
+              <div className="quick-actions">
+                <Link to="/ativos" className="quick-action-btn">
+                  <FaDesktop /> Controle de Ativos
+                </Link>
+                <Link to="/estoque" className="quick-action-btn">
+                  <FaWarehouse /> Controle de Estoque
+                </Link>
+                <Link to="/inventario" className="quick-action-btn">
+                  <FaBoxOpen /> Inventário
+                </Link>
+              </div>
+            </div>
+          </div>
+        </>
       ) : (
         <>
-          <div className="stats-grid">
-            <StatCard title="Minhas Folgas Pendentes" value={stats?.my_pending_folgas} icon={<FaCalendarAlt />} iconClass="icon-folgas" />
-            <StatCard title="Minhas Férias Pendentes" value={stats?.my_pending_ferias} icon={<FaCalendarAlt />} iconClass="icon-ferias" />
-            <StatCard title="Minhas Trocas Pendentes" value={stats?.my_pending_trocas} icon={<FaExchangeAlt />} iconClass="icon-trocas" />
-            <StatCard title="Minhas Pendências" value={stats?.my_pending_pendencias} icon={<FaTasks />} iconClass="icon-pendencias" />
+          <div className="dashboard-stats">
+            <StatCard 
+              title="Minhas Folgas Pendentes" 
+              value={stats?.my_pending_folgas} 
+              icon={<FaCalendarAlt />} 
+              type="warning" 
+            />
+            <StatCard 
+              title="Minhas Férias Pendentes" 
+              value={stats?.my_pending_ferias} 
+              icon={<FaCalendarAlt />} 
+              type="info" 
+            />
+            <StatCard 
+              title="Minhas Trocas Pendentes" 
+              value={stats?.my_pending_trocas} 
+              icon={<FaExchangeAlt />} 
+              type="warning" 
+            />
+            <StatCard 
+              title="Minhas Pendências" 
+              value={stats?.my_pending_pendencias} 
+              icon={<FaTasks />} 
+              type="info" 
+            />
           </div>
-          <div className="quick-actions">
-            <Link to="/folgas" className="form-button">Pedir Folga</Link>
-            <Link to="/ferias" className="form-button">Pedir Férias</Link>
+
+          <div className="dashboard-sections">
+            <div className="section-card">
+              <div className="section-header">
+                <h3 className="section-title">
+                  <span className="section-icon">📅</span>
+                  Solicitações Rápidas
+                </h3>
+              </div>
+              <div className="section-content">
+                <p>Faça suas solicitações de folga e férias diretamente pelo sistema. Acompanhe o status das suas solicitações pendentes.</p>
+              </div>
+              <div className="quick-actions">
+                <Link to="/folgas" className="quick-action-btn">
+                  <FaCalendarAlt /> Solicitar Folga
+                </Link>
+                <Link to="/ferias" className="quick-action-btn">
+                  <FaCalendarAlt /> Solicitar Férias
+                </Link>
+                <Link to="/turno" className="quick-action-btn">
+                  <FaExchangeAlt /> Trocar Turno
+                </Link>
+              </div>
+            </div>
+
+            <div className="section-card">
+              <div className="section-header">
+                <h3 className="section-title">
+                  <span className="section-icon">📋</span>
+                  Acompanhamento
+                </h3>
+              </div>
+              <div className="section-content">
+                <p>Visualize o histórico das suas solicitações e acompanhe suas pendências em aberto.</p>
+              </div>
+              <div className="quick-actions">
+                <Link to="/historico" className="quick-action-btn">
+                  📊 Ver Histórico
+                </Link>
+                <Link to="/pendencias" className="quick-action-btn">
+                  <FaTasks /> Minhas Pendências
+                </Link>
+              </div>
+            </div>
           </div>
         </>
       )}

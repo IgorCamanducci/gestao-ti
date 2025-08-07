@@ -2,15 +2,13 @@ import React from 'react';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 
-// Componentes
+// Componentes e Páginas
 import Layout from './components/layout/Layout.jsx';
 import Login from './pages/Login.jsx';
 import ProtectedRoute from './components/auth/ProtectedRoute.jsx';
 import CoordenadorRoute from './components/auth/CoordenadorRoute.jsx';
 import RecuperarSenha from './pages/RecuperarSenha.jsx';
 import UpdatePassword from './pages/UpdatePassword.jsx';
-
-// Páginas
 import PaginaInicial from './pages/PaginaInicial.jsx';
 import GestaoDeFolgas from './pages/GestaoDeFolgas.jsx';
 import GestaoDeFerias from './pages/GestaoDeFerias.jsx';
@@ -22,7 +20,7 @@ import Pendencias from './pages/Pendencias.jsx';
 import Usuarios from './pages/Usuarios.jsx';
 import Configuracoes from './pages/Configuracoes.jsx';
 import GerenciarCategorias from './pages/GerenciarCategorias.jsx';
-import Historico from './pages/Historico.jsx'; // <-- 1. Importa a nova página
+import Historico from './pages/Historico.jsx'; // <-- Nova página importada
 import Logout from './pages/Logout.jsx';
 
 const router = createBrowserRouter([
@@ -39,7 +37,7 @@ const router = createBrowserRouter([
       { path: 'turno', element: <TrocaDeTurno /> },
       { path: 'pendencias', element: <Pendencias /> },
       { path: 'usuarios', element: (<CoordenadorRoute><Usuarios /></CoordenadorRoute>) },
-      { path: 'historico', element: <Historico /> }, // <-- 2. Adiciona a nova rota
+      { path: 'historico', element: <Historico /> }, // <-- Nova rota adicionada
       { path: 'configuracoes', element: <Configuracoes /> },
       { path: 'configuracoes/categorias-ativos', element: <GerenciarCategorias /> },
       { path: 'logout', element: <Logout /> },

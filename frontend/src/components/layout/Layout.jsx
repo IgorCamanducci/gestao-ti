@@ -1,24 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-
-// Importação de todos os ícones
-import { 
-  FaUserCircle, 
-  FaBars, 
-  FaHome, 
-  FaCalendarAlt, 
-  FaBoxOpen, 
-  FaUsers, 
-  FaCogs, 
-  FaSignOutAlt, 
-  FaTasks, 
-  FaExchangeAlt, 
-  FaWarehouse, 
-  FaDesktop,
-  FaHistory // <-- 1. Importa o ícone de Histórico
+import { useTheme } from '../../context/ThemeContext';
+import {
+  FaUserCircle, FaBars, FaHome, FaCalendarAlt, FaBoxOpen, FaUsers,
+  FaCogs, FaSignOutAlt, FaTasks, FaExchangeAlt, FaWarehouse, FaDesktop,
+  FaHistory, FaSun, FaMoon
 } from 'react-icons/fa';
-
 import './layout.css';
 
 const getInitialMenuState = () => {
@@ -26,14 +14,29 @@ const getInitialMenuState = () => {
   return savedState === 'true';
 };
 
+const getInitialSidebarWidth = () => {
+  const savedWidth = localStorage.getItem('sidebarWidth');
+  return savedWidth ? parseInt(savedWidth) : 240;
+};
+
 function Layout() {
   const { profile } = useAuth();
+  const { isDark, toggleTheme } = useTheme();
   const [isCollapsed, setIsCollapsed] = useState(getInitialMenuState);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(getInitialSidebarWidth);
+  const [isResizing, setIsResizing] = useState(false);
+  const sidebarRef = useRef(null);
 
   useEffect(() => {
     localStorage.setItem('isMenuCollapsed', isCollapsed);
   }, [isCollapsed]);
 
+  useEffect(() => {
+    localStorage.setItem('sidebarWidth', sidebarWidth.toString());
+  }, [sidebarWidth]);
+
+  // Ordem e agrupamento conforme solicitado
   const menuItems = [
     { path: '/', name: 'Página Inicial', icon: <FaHome /> },
     { path: '/folgas', name: 'Gestão de Folgas', icon: <FaCalendarAlt /> },
@@ -44,59 +47,138 @@ function Layout() {
     { path: '/turno', name: 'Troca de Turno', icon: <FaExchangeAlt /> },
     { path: '/pendencias', name: 'Pendências', icon: <FaTasks /> },
     profile?.role === 'coordenador' && { path: '/usuarios', name: 'Usuários', icon: <FaUsers /> },
-    { path: '/historico', name: 'Histórico', icon: <FaHistory /> }, // <-- 2. Adiciona o novo item de menu
+    { path: '/historico', name: 'Histórico', icon: <FaHistory /> },
   ].filter(Boolean);
 
-  return (
-    <div className={`app-layout ${isCollapsed ? 'collapsed' : ''}`}>
-      <nav className="sidebar">
-        <div>
-          <div className="sidebar-header">
-            <h2 className="logo-text">{!isCollapsed ? 'Gestão' : 'G'}</h2>
-            <button className="toggle-button" onClick={() => setIsCollapsed(!isCollapsed)}>
-              <FaBars />
-            </button>
-          </div>
+  const handleSidebarClose = () => {
+    setIsSidebarOpen(false);
+  };
 
-          <div className="profile-section">
-            {profile?.avatar_url ? (
-              <img src={profile.avatar_url} alt="Avatar" className="profile-avatar" />
-            ) : (
-              <FaUserCircle size={40} className="profile-avatar-placeholder" />
-            )}
-            <span className="profile-name">{profile?.full_name || 'Usuário'}</span>
-          </div>
-          
-          <ul className="main-nav">
-            <li className="separator-nav"></li>
-            {menuItems.map(item => (
-              <li key={item.name}>
-                <NavLink to={item.path} end={item.path === '/'}>
-                  {item.icon}
-                  <span className="link-text">{item.name}</span>
-                </NavLink>
-              </li>
-            ))}
-          </ul>
+  const getInitials = (name) => {
+    if (!name) return 'U';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
+
+  const handleMouseDown = (e) => {
+    if (isCollapsed) return;
+    setIsResizing(true);
+    e.preventDefault();
+  };
+
+  const handleMouseMove = (e) => {
+    if (!isResizing) return;
+    
+    const newWidth = e.clientX;
+    const minWidth = 200;
+    const maxWidth = 400;
+    
+    if (newWidth >= minWidth && newWidth <= maxWidth) {
+      setSidebarWidth(newWidth);
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsResizing(false);
+  };
+
+  useEffect(() => {
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [isResizing]);
+
+  return (
+    <div className={`layout-container ${isCollapsed ? 'collapsed' : ''} ${isResizing ? 'resizing' : ''}`}>
+      {/* Overlay para mobile */}
+      <div
+        className={`sidebar-overlay ${isSidebarOpen ? 'open' : ''}`}
+        onClick={handleSidebarClose}
+      />
+
+      {/* Sidebar */}
+      <nav 
+        ref={sidebarRef}
+        className={`sidebar ${isSidebarOpen ? 'open' : ''}`}
+        style={{ width: isCollapsed ? '70px' : `${sidebarWidth}px` }}
+      >
+        <div className="logo-group">
+          <button
+            className="toggle-button"
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            title={isCollapsed ? 'Expandir menu' : 'Colapsar menu'}
+          >
+            <FaBars />
+          </button>
+          <span className="logo-text">{!isCollapsed ? 'Gestão TI' : 'G'}</span>
         </div>
-        <ul className="bottom-nav">
-          <li className="separator-nav"></li>
-          <li>
-            <NavLink to="/configuracoes">
+
+        <div className="nav-menu refined">
+          {menuItems.map(item => (
+            <NavLink
+              key={item.name}
+              to={item.path}
+              end={item.path === '/'}
+              className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+              onClick={handleSidebarClose}
+              title={isCollapsed ? item.name : ''}
+            >
+              <span className="nav-icon">{item.icon}</span>
+              <span className="nav-text">{item.name}</span>
+            </NavLink>
+          ))}
+        </div>
+
+        <div className="sidebar-divider" />
+
+        <div className="sidebar-footer refined">
+          <div className="sidebar-actions refined">
+            <button
+              className="sidebar-action-btn"
+              onClick={toggleTheme}
+              title={isDark ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
+            >
+              {isDark ? <FaSun /> : <FaMoon />}
+            </button>
+            <NavLink to="/configuracoes" className="sidebar-action-btn" title="Configurações">
               <FaCogs />
-              <span className="link-text">Configurações</span>
             </NavLink>
-          </li>
-          <li>
-            <NavLink to="/logout">
+            <NavLink to="/logout" className="sidebar-action-btn logout" title="Sair">
               <FaSignOutAlt />
-              <span className="link-text">Logout</span>
             </NavLink>
-          </li>
-        </ul>
+          </div>
+          <div className="user-avatar refined">
+            {profile?.avatar_url ? (
+              <img
+                src={profile.avatar_url}
+                alt="Avatar"
+                style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+              />
+            ) : (
+              getInitials(profile?.full_name)
+            )}
+          </div>
+        </div>
+
+        {/* Handle de redimensionamento */}
+        {!isCollapsed && (
+          <div 
+            className="resize-handle"
+            onMouseDown={handleMouseDown}
+          />
+        )}
       </nav>
-      <main className="content">
-        <Outlet />
+
+      {/* Conteúdo principal */}
+      <main className="main-content refined">
+        <div className="page-content refined">
+          <Outlet />
+        </div>
       </main>
     </div>
   );

@@ -1,42 +1,113 @@
-.manager-page h1 {
-  margin-bottom: 24px;
-}
-.manager-page > p {
-  margin-top: -16px;
-  margin-bottom: 32px;
-  color: var(--secondary-text-color);
+/* ===== PÁGINA GERENCIAR CATEGORIAS ===== */
+
+.manager-page {
+  padding: var(--spacing-xl);
+  background-color: var(--bg-color);
+  min-height: 100vh;
 }
 
+.manager-page h1 {
+  font-size: var(--font-size-3xl);
+  font-weight: 700;
+  color: var(--primary-text-color);
+  margin-bottom: var(--spacing-sm);
+}
+
+.manager-page > p {
+  font-size: var(--font-size-lg);
+  color: var(--secondary-text-color);
+  margin-bottom: var(--spacing-xl);
+}
+
+/* Formulário de Adicionar Categoria */
 .add-category-form {
   display: flex;
-  gap: 16px;
-  margin-bottom: 32px;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-xl);
   background-color: var(--bg-secondary-color);
-  padding: 24px;
-  border-radius: 8px;
+  padding: var(--spacing-lg);
+  border-radius: var(--border-radius-lg);
   border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-card);
 }
 
 .add-category-form input {
   flex-grow: 1;
+  padding: var(--spacing-md);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-base);
+  background-color: var(--bg-color);
+  color: var(--primary-text-color);
+  transition: all var(--transition-fast);
 }
 
-.category-accordion .category-card {
+.add-category-form input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(230, 126, 34, 0.1);
+}
+
+.add-category-form input::placeholder {
+  color: var(--tertiary-text-color);
+}
+
+.add-category-form button {
+  padding: var(--spacing-md) var(--spacing-lg);
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.add-category-form button:hover {
+  background-color: var(--primary-color-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-card);
+}
+
+.add-category-form button:disabled {
+  background-color: var(--tertiary-text-color);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Accordion de Categorias */
+.category-accordion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.category-card {
   background-color: var(--bg-secondary-color);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
-  margin-bottom: 16px;
+  border-radius: var(--border-radius-lg);
   overflow: hidden;
+  box-shadow: var(--shadow-card);
+  transition: all var(--transition-normal);
+}
+
+.category-card:hover {
+  box-shadow: var(--shadow-card-hover);
+  border-color: var(--border-hover-color);
 }
 
 .category-card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 24px;
+  padding: var(--spacing-lg);
   cursor: pointer;
-  background-color: var(--bg-secondary-color);
-  transition: background-color 0.2s;
+  background-color: var(--bg-tertiary-color);
+  transition: background-color var(--transition-fast);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .category-card-header:hover {
@@ -45,47 +116,79 @@
 
 .category-card-header h3 {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--primary-text-color);
 }
 
 .category-card-controls {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--spacing-sm);
+}
+
+.category-card-controls button {
+  background: none;
+  border: none;
+  color: var(--secondary-text-color);
+  cursor: pointer;
+  padding: var(--spacing-xs);
+  border-radius: var(--border-radius-sm);
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-base);
+}
+
+.category-card-controls button:hover {
+  background-color: var(--bg-color);
+  color: var(--primary-text-color);
+}
+
+.category-card-controls button.edit:hover {
+  color: var(--info-color);
+}
+
+.category-card-controls button.delete:hover {
+  color: var(--error-color);
 }
 
 .category-card-body {
-  padding: 0 24px 24px 24px;
-  border-top: 1px solid var(--border-color);
+  padding: var(--spacing-lg);
+  background-color: var(--bg-secondary-color);
 }
 
+/* Lista de Campos */
 .field-list {
   list-style: none;
   padding: 0;
-  margin: 0;
-  margin-top: 24px;
-  margin-bottom: 24px;
+  margin: var(--spacing-lg) 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
 }
 
 .field-list li {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px;
-  border-radius: 6px;
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-md);
   background-color: var(--bg-color);
-  margin-bottom: 8px;
+  border: 1px solid var(--border-color);
+  transition: all var(--transition-fast);
 }
 
-.add-field-form {
-  display: flex;
-  gap: 8px;
-  border-top: 1px solid var(--border-color);
-  padding-top: 24px;
+.field-list li:hover {
+  border-color: var(--border-hover-color);
+  box-shadow: var(--shadow-card);
 }
 
-.add-field-form input {
-  flex-grow: 1;
+.field-list li span {
+  font-size: var(--font-size-base);
+  color: var(--primary-text-color);
+  font-weight: 500;
 }
 
 .delete-button {
@@ -95,17 +198,251 @@
   cursor: pointer;
   display: flex;
   align-items: center;
-  padding: 4px;
+  justify-content: center;
+  padding: var(--spacing-xs);
   border-radius: 50%;
+  transition: all var(--transition-fast);
+  font-size: var(--font-size-base);
 }
 
 .delete-button:hover {
-  color: #dc3545;
+  color: var(--error-color);
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
+/* Formulário de Adicionar Campo */
+.add-field-form {
+  display: flex;
+  gap: var(--spacing-sm);
+  border-top: 1px solid var(--border-color);
+  padding-top: var(--spacing-lg);
+  margin-top: var(--spacing-lg);
+}
+
+.add-field-form input {
+  flex-grow: 1;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-base);
   background-color: var(--bg-color);
+  color: var(--primary-text-color);
+  transition: all var(--transition-fast);
+}
+
+.add-field-form input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(230, 126, 34, 0.1);
+}
+
+.add-field-form input::placeholder {
+  color: var(--tertiary-text-color);
 }
 
 .add-button {
-  padding: 10px;
-  line-height: 1;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--success-color);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.add-button:hover {
+  background-color: var(--success-color-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-card);
+}
+
+.add-button:disabled {
+  background-color: var(--tertiary-text-color);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Estado Vazio */
+.empty-state {
+  text-align: center;
+  padding: var(--spacing-2xl);
+  color: var(--secondary-text-color);
+}
+
+.empty-icon {
+  font-size: var(--font-size-4xl);
+  color: var(--tertiary-text-color);
+  margin-bottom: var(--spacing-lg);
+}
+
+.empty-state h3 {
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+  color: var(--primary-text-color);
+  margin-bottom: var(--spacing-sm);
+}
+
+.empty-state p {
+  font-size: var(--font-size-base);
+  margin: 0;
+}
+
+/* Estado de Carregamento */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  color: var(--secondary-text-color);
+  text-align: center;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border-color);
+  border-top: 3px solid var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: var(--spacing-md);
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ===== RESPONSIVIDADE ===== */
+
+@media (max-width: 1024px) {
+  .manager-page {
+    padding: var(--spacing-lg);
+  }
+  
+  .add-category-form {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+  
+  .add-category-form input {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .manager-page {
+    padding: var(--spacing-md);
+  }
+  
+  .manager-page h1 {
+    font-size: var(--font-size-2xl);
+  }
+  
+  .manager-page > p {
+    font-size: var(--font-size-base);
+  }
+  
+  .add-category-form {
+    padding: var(--spacing-md);
+  }
+  
+  .category-card-header {
+    padding: var(--spacing-md);
+  }
+  
+  .category-card-header h3 {
+    font-size: var(--font-size-base);
+  }
+  
+  .category-card-body {
+    padding: var(--spacing-md);
+  }
+  
+  .add-field-form {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+  
+  .add-field-form input {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .manager-page {
+    padding: var(--spacing-sm);
+  }
+  
+  .manager-page h1 {
+    font-size: var(--font-size-xl);
+  }
+  
+  .manager-page > p {
+    font-size: var(--font-size-sm);
+  }
+  
+  .add-category-form {
+    padding: var(--spacing-sm);
+  }
+  
+  .category-card-header {
+    padding: var(--spacing-sm);
+  }
+  
+  .category-card-body {
+    padding: var(--spacing-sm);
+  }
+  
+  .field-list li {
+    padding: var(--spacing-sm);
+  }
+  
+  .field-list li span {
+    font-size: var(--font-size-sm);
+  }
+}
+
+/* ===== MELHORIAS DE ACESSIBILIDADE ===== */
+
+@media (prefers-reduced-motion: reduce) {
+  .category-card,
+  .category-card-header,
+  .field-list li,
+  .add-category-form input,
+  .add-field-form input,
+  .category-card-controls button,
+  .delete-button,
+  .add-button {
+    transition: none;
+  }
+  
+  .category-card:hover,
+  .add-category-form button:hover,
+  .add-button:hover {
+    transform: none;
+  }
+  
+  .loading-spinner {
+    animation: none;
+  }
+}
+
+@media (prefers-contrast: high) {
+  .category-card,
+  .add-category-form {
+    border: 2px solid var(--primary-color);
+  }
+  
+  .add-category-form button,
+  .add-button {
+    border: 2px solid var(--primary-color);
+  }
 }

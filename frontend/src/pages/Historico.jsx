@@ -1,102 +1,261 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import toast from 'react-hot-toast';
+import { FaSearch, FaFilter, FaDownload, FaEye, FaTrash, FaEdit, FaBox, FaDesktop, FaTools } from 'react-icons/fa';
 import './Historico.css';
 
 function Historico() {
-  const [history, setHistory] = useState([]);
+  const [ativos, setAtivos] = useState([]);
+  const [categorias, setCategorias] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('');
 
   useEffect(() => {
-    const fetchHistory = async () => {
-      try {
-        setLoading(true);
-        // Esta query busca o histórico e já traz os dados relacionados do ativo e do perfil
-        const { data, error } = await supabase
-          .from('asset_history')
-          .select(`
-            id,
-            event_type,
-            event_date,
-            ativos ( asset_tag, name, metadata ),
-            profiles ( full_name )
-          `)
-          .order('event_date', { ascending: false });
-
-        if (error) throw error;
-        setHistory(data);
-      } catch (error) {
-        console.error("Erro ao buscar histórico:", error.message);
-        setError("Não foi possível carregar o histórico.");
-        toast.error("Não foi possível carregar o histórico.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchHistory();
+    fetchData();
   }, []);
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      
+      // Buscar categorias
+      const { data: categoriasData, error: categoriasError } = await supabase
+        .from('categorias_ativos')
+        .select('*')
+        .order('nome');
+
+      if (categoriasError) throw categoriasError;
+
+      // Buscar ativos com baixa (status = 'baixa')
+      const { data: ativosData, error: ativosError } = await supabase
+        .from('ativos')
+        .select(`
+          *,
+          categorias_ativos (
+            id,
+            nome
+          )
+        `)
+        .eq('status', 'baixa')
+        .order('data_baixa', { ascending: false });
+
+      if (ativosError) throw ativosError;
+
+      setCategorias(categoriasData || []);
+      setAtivos(ativosData || []);
+    } catch (error) {
+      console.error('Erro ao carregar dados do histórico:', error);
+      // Se não conseguir buscar dados reais, mostrar estado vazio
+      setCategorias([]);
+      setAtivos([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  if (loading) return <div>Carregando histórico...</div>;
-  if (error) return <div style={{ color: 'red' }}>{error}</div>;
+  const filteredAtivos = ativos.filter(ativo => {
+    const matchesSearch = ativo.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         ativo.categorias_ativos?.nome.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = !selectedCategory || ativo.categoria_id === parseInt(selectedCategory);
+    const matchesStatus = !selectedStatus || ativo.status === selectedStatus;
+    
+    return matchesSearch && matchesCategory && matchesStatus;
+  });
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'baixa':
+        return <FaTrash />;
+      default:
+        return <FaBox />;
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'baixa':
+        return 'baixa';
+      default:
+        return 'default';
+    }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return '-';
+    return new Date(dateString).toLocaleDateString('pt-BR');
+  };
+
+  const handleExport = () => {
+    const csvContent = [
+      ['Nome', 'Categoria', 'Status', 'Data de Baixa', 'Motivo da Baixa'],
+      ...filteredAtivos.map(ativo => [
+        ativo.nome,
+        ativo.categorias_ativos?.nome || '-',
+        ativo.status,
+        formatDate(ativo.data_baixa),
+        ativo.motivo_baixa || '-'
+      ])
+    ].map(row => row.join(',')).join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'historico_ativos.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  if (loading) {
+    return (
+      <div className="historico-container">
+        <div className="loading-state">
+          <div className="loading-spinner"></div>
+          <p>Carregando histórico...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="history-page">
-      <h1>Histórico de Movimentação de Ativos</h1>
-      <div className="history-table-container">
-        <table className="history-table">
-          <thead>
-            <tr>
-              <th>Data do Evento</th>
-              <th>Tipo</th>
-              <th>Nome do Ativo</th>
-              <th>Etiqueta</th>
-              <th>Responsável</th>
-              <th>Modelo</th>
-              <th>Fabricante</th>
-              <th>Número de Série</th>
-            </tr>
-          </thead>
-          <tbody>
-            {history.length > 0 ? (
-              history.map(item => (
-                <tr key={item.id}>
-                  <td>{formatDate(item.event_date)}</td>
-                  <td>
-                    <span className={`event-${item.event_type}`}>{item.event_type}</span>
-                  </td>
-                  <td>{item.ativos?.name || 'N/A'}</td>
-                  <td>{item.ativos?.asset_tag || 'N/A'}</td>
-                  <td>{item.profiles?.full_name || 'N/A'}</td>
-                  <td>{item.ativos?.metadata?.model || '---'}</td>
-                  <td>{item.ativos?.metadata?.brand || '---'}</td>
-                  <td>{item.ativos?.metadata?.serial_number || '---'}</td>
+    <div className="historico-container">
+      <div className="historico-header">
+        <div className="header-content">
+          <h1 className="historico-title">📋 Histórico de Ativos</h1>
+          <p className="historico-subtitle">
+            Visualize todos os ativos que foram dados baixa no sistema
+          </p>
+        </div>
+        <div className="header-actions">
+          <button className="export-button" onClick={handleExport}>
+            <FaDownload />
+            Exportar CSV
+          </button>
+        </div>
+      </div>
+
+      {/* Filtros */}
+      <div className="filters-section">
+        <div className="search-container">
+          <div className="search-input-wrapper">
+            <FaSearch className="search-icon" />
+            <input
+              type="text"
+              placeholder="Buscar por nome ou categoria..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="search-input"
+            />
+          </div>
+        </div>
+
+        <div className="filters-row">
+          <div className="filter-group">
+            <label className="filter-label">Categoria:</label>
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="filter-select"
+            >
+              <option value="">Todas as categorias</option>
+              {categorias.map(categoria => (
+                <option key={categoria.id} value={categoria.id}>
+                  {categoria.nome}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="filter-group">
+            <label className="filter-label">Status:</label>
+            <select
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              className="filter-select"
+            >
+              <option value="">Todos os status</option>
+              <option value="baixa">Baixa</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Resultados */}
+      <div className="results-section">
+        <div className="results-header">
+          <h3 className="results-title">
+            Resultados ({filteredAtivos.length} itens)
+          </h3>
+        </div>
+
+        {filteredAtivos.length > 0 ? (
+          <div className="table-container">
+            <table className="historico-table">
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>Categoria</th>
+                  <th>Status</th>
+                  <th>Data de Baixa</th>
+                  <th>Motivo da Baixa</th>
+                  <th>Ações</th>
                 </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="8" style={{ textAlign: 'center', padding: '32px' }}>
-                  Nenhum registro de histórico encontrado.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+              </thead>
+              <tbody>
+                {filteredAtivos.map(ativo => (
+                  <tr key={ativo.id} className="table-row">
+                    <td className="asset-name">
+                      <div className="asset-info">
+                        <span className="asset-icon">
+                          {getStatusIcon(ativo.status)}
+                        </span>
+                        <span>{ativo.nome}</span>
+                      </div>
+                    </td>
+                    <td className="asset-category">
+                      {ativo.categorias_ativos?.nome || '-'}
+                    </td>
+                    <td className="asset-status">
+                      <span className={`status-badge ${getStatusColor(ativo.status)}`}>
+                        {ativo.status === 'baixa' ? 'Baixa' : ativo.status}
+                      </span>
+                    </td>
+                    <td className="asset-date">
+                      {formatDate(ativo.data_baixa)}
+                    </td>
+                    <td className="asset-reason">
+                      {ativo.motivo_baixa || '-'}
+                    </td>
+                    <td className="asset-actions">
+                      <button className="action-button view" title="Visualizar detalhes">
+                        <FaEye />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="empty-state">
+            <div className="empty-icon">
+              <FaBox />
+            </div>
+            <h3>Nenhum item encontrado</h3>
+            <p>
+              {searchTerm || selectedCategory || selectedStatus
+                ? 'Tente ajustar os filtros de busca.'
+                : 'Não há itens com baixa registrados no sistema.'
+              }
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
-// Garante que o arquivo possa ser importado corretamente
 export default Historico;

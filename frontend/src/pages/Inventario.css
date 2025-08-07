@@ -1,0 +1,421 @@
+/* ===== PÁGINA DE INVENTÁRIO ===== */
+
+.inventario-container {
+  padding: var(--spacing-xl);
+  background-color: var(--bg-color);
+  min-height: 100vh;
+}
+
+.inventario-header {
+  margin-bottom: var(--spacing-2xl);
+  text-align: center;
+}
+
+.inventario-title {
+  font-size: var(--font-size-3xl);
+  font-weight: 700;
+  color: var(--primary-text-color);
+  margin-bottom: var(--spacing-sm);
+}
+
+.inventario-subtitle {
+  font-size: var(--font-size-lg);
+  color: var(--secondary-text-color);
+  margin: 0;
+}
+
+/* Estatísticas Gerais */
+.stats-overview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-2xl);
+}
+
+.stats-overview .stat-card {
+  background-color: var(--bg-secondary-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-card);
+  transition: all var(--transition-normal);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.stats-overview .stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card-hover);
+  border-color: var(--border-hover-color);
+}
+
+.stats-overview .stat-card.total {
+  border-color: var(--primary-color);
+}
+
+.stats-overview .stat-card.estoque {
+  border-color: var(--success-color);
+}
+
+.stats-overview .stat-card.uso {
+  border-color: var(--info-color);
+}
+
+.stats-overview .stat-card.manutencao {
+  border-color: var(--warning-color);
+}
+
+.stats-overview .stat-icon {
+  font-size: var(--font-size-2xl);
+  color: var(--primary-color);
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-tertiary-color);
+  border-radius: var(--border-radius-lg);
+  flex-shrink: 0;
+}
+
+.stats-overview .stat-card.estoque .stat-icon {
+  color: var(--success-color);
+}
+
+.stats-overview .stat-card.uso .stat-icon {
+  color: var(--info-color);
+}
+
+.stats-overview .stat-card.manutencao .stat-icon {
+  color: var(--warning-color);
+}
+
+.stats-overview .stat-content h3 {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--secondary-text-color);
+  margin: 0 0 var(--spacing-xs) 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.stats-overview .stat-value {
+  font-size: var(--font-size-2xl);
+  font-weight: 800;
+  color: var(--primary-text-color);
+  margin: 0;
+  line-height: 1;
+}
+
+/* Grid de Categorias */
+.categories-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+.category-card {
+  background-color: var(--bg-secondary-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-card);
+  transition: all var(--transition-normal);
+}
+
+.category-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card-hover);
+  border-color: var(--border-hover-color);
+}
+
+.category-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.category-icon {
+  font-size: var(--font-size-xl);
+  color: var(--primary-color);
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-tertiary-color);
+  border-radius: var(--border-radius-md);
+  flex-shrink: 0;
+}
+
+.category-info {
+  flex: 1;
+}
+
+.category-name {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--primary-text-color);
+  margin: 0 0 var(--spacing-xs) 0;
+}
+
+.category-total {
+  font-size: var(--font-size-sm);
+  color: var(--secondary-text-color);
+  margin: 0;
+}
+
+/* Estatísticas da Categoria */
+.category-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.stat-item {
+  text-align: center;
+  padding: var(--spacing-sm);
+  border-radius: var(--border-radius-md);
+  background-color: var(--bg-tertiary-color);
+}
+
+.stat-item.estoque {
+  border-left: 3px solid var(--success-color);
+}
+
+.stat-item.uso {
+  border-left: 3px solid var(--info-color);
+}
+
+.stat-item.manutencao {
+  border-left: 3px solid var(--warning-color);
+}
+
+.stat-label {
+  display: block;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--secondary-text-color);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--spacing-xs);
+}
+
+.stat-item .stat-value {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--primary-text-color);
+  margin: 0;
+}
+
+/* Barra de Progresso */
+.category-progress {
+  margin-top: var(--spacing-md);
+}
+
+.progress-bar {
+  height: 8px;
+  background-color: var(--bg-tertiary-color);
+  border-radius: var(--border-radius-sm);
+  overflow: hidden;
+  display: flex;
+}
+
+.progress-segment {
+  height: 100%;
+  transition: width var(--transition-normal);
+}
+
+.progress-segment.estoque {
+  background-color: var(--success-color);
+}
+
+.progress-segment.uso {
+  background-color: var(--info-color);
+}
+
+.progress-segment.manutencao {
+  background-color: var(--warning-color);
+}
+
+/* Estado Vazio */
+.empty-state {
+  text-align: center;
+  padding: var(--spacing-2xl);
+  color: var(--secondary-text-color);
+}
+
+.empty-icon {
+  font-size: var(--font-size-4xl);
+  color: var(--tertiary-text-color);
+  margin-bottom: var(--spacing-lg);
+}
+
+.empty-state h3 {
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+  color: var(--primary-text-color);
+  margin-bottom: var(--spacing-sm);
+}
+
+.empty-state p {
+  font-size: var(--font-size-base);
+  margin: 0;
+}
+
+/* Estado de Carregamento */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  color: var(--secondary-text-color);
+  text-align: center;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border-color);
+  border-top: 3px solid var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: var(--spacing-md);
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ===== RESPONSIVIDADE ===== */
+
+@media (max-width: 1024px) {
+  .inventario-container {
+    padding: var(--spacing-lg);
+  }
+  
+  .stats-overview {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: var(--spacing-md);
+  }
+  
+  .categories-grid {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--spacing-md);
+  }
+}
+
+@media (max-width: 768px) {
+  .inventario-container {
+    padding: var(--spacing-md);
+  }
+  
+  .inventario-title {
+    font-size: var(--font-size-2xl);
+  }
+  
+  .inventario-subtitle {
+    font-size: var(--font-size-base);
+  }
+  
+  .stats-overview {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-sm);
+  }
+  
+  .categories-grid {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-sm);
+  }
+  
+  .category-stats {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-sm);
+  }
+  
+  .stats-overview .stat-card {
+    padding: var(--spacing-md);
+  }
+  
+  .category-card {
+    padding: var(--spacing-md);
+  }
+  
+  .stats-overview .stat-value {
+    font-size: var(--font-size-xl);
+  }
+  
+  .stat-item .stat-value {
+    font-size: var(--font-size-base);
+  }
+}
+
+@media (max-width: 480px) {
+  .inventario-container {
+    padding: var(--spacing-sm);
+  }
+  
+  .inventario-title {
+    font-size: var(--font-size-xl);
+  }
+  
+  .inventario-subtitle {
+    font-size: var(--font-size-sm);
+  }
+  
+  .stats-overview .stat-card {
+    padding: var(--spacing-sm);
+  }
+  
+  .category-card {
+    padding: var(--spacing-sm);
+  }
+  
+  .stats-overview .stat-icon {
+    width: 40px;
+    height: 40px;
+    font-size: var(--font-size-xl);
+  }
+  
+  .category-icon {
+    width: 32px;
+    height: 32px;
+    font-size: var(--font-size-lg);
+  }
+}
+
+/* ===== MELHORIAS DE ACESSIBILIDADE ===== */
+
+@media (prefers-reduced-motion: reduce) {
+  .category-card,
+  .stats-overview .stat-card {
+    transition: none;
+  }
+  
+  .category-card:hover,
+  .stats-overview .stat-card:hover {
+    transform: none;
+  }
+  
+  .progress-segment {
+    transition: none;
+  }
+  
+  .loading-spinner {
+    animation: none;
+  }
+}
+
+@media (prefers-contrast: high) {
+  .category-card,
+  .stats-overview .stat-card {
+    border: 2px solid var(--primary-color);
+  }
+}

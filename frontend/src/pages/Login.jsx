@@ -33,16 +33,47 @@ function Login() {
   };
 
   return (
-    <div className="login-page">
-      <div className="login-container">
+    <div className="login-container">
+      <div className="login-card">
+        <div className="login-header">
+          <div className="login-logo">🏢</div>
+          <h1 className="login-title">Sistema de Gestão</h1>
+          <p className="login-subtitle">Faça login para continuar</p>
+        </div>
+        
         <form className="login-form" onSubmit={handleSubmit}>
-          <input type="email" placeholder="E-mail" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={loading} />
-          <input type="password" placeholder="Senha" value={password} onChange={(e) => setPassword(e.target.value)} required disabled={loading} />
-          <button type="submit" disabled={loading}>
+          <div className="form-group">
+            <label htmlFor="email">E-mail</label>
+            <input 
+              type="email" 
+              id="email"
+              placeholder="Digite seu e-mail" 
+              value={email} 
+              onChange={(e) => setEmail(e.target.value)} 
+              required 
+              disabled={loading} 
+            />
+          </div>
+          
+          <div className="form-group">
+            <label htmlFor="password">Senha</label>
+            <input 
+              type="password" 
+              id="password"
+              placeholder="Digite sua senha" 
+              value={password} 
+              onChange={(e) => setPassword(e.target.value)} 
+              required 
+              disabled={loading} 
+            />
+          </div>
+          
+          <button type="submit" className="login-button" disabled={loading}>
             {loading ? 'Entrando...' : 'Entrar'}
           </button>
         </form>
-        <div className="forgot-password-link">
+        
+        <div className="login-footer">
           <Link to="/recuperar-senha">Esqueceu a senha?</Link>
         </div>
       </div>
