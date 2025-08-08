@@ -5,7 +5,7 @@ import { useTheme } from '../../context/ThemeContext';
 import {
   FaUserCircle, FaBars, FaHome, FaCalendarAlt, FaBoxOpen, FaUsers,
   FaCogs, FaSignOutAlt, FaTasks, FaExchangeAlt, FaWarehouse, FaDesktop,
-  FaHistory, FaSun, FaMoon
+  FaHistory, FaSun, FaMoon, FaWrench
 } from 'react-icons/fa';
 import './layout.css';
 
@@ -43,6 +43,7 @@ function Layout() {
     { path: '/ferias', name: 'Gestão de Férias', icon: <FaCalendarAlt /> },
     { path: '/inventario', name: 'Inventário', icon: <FaBoxOpen /> },
     { path: '/ativos', name: 'Controle de Ativos', icon: <FaDesktop /> },
+    { path: '/manutencao', name: 'Ativos em Manutenção', icon: <FaWrench /> },
     { path: '/estoque', name: 'Controle de Estoque', icon: <FaWarehouse /> },
     { path: '/turno', name: 'Troca de Turno', icon: <FaExchangeAlt /> },
     { path: '/pendencias', name: 'Pendências', icon: <FaTasks /> },

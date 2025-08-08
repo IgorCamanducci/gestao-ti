@@ -18,30 +18,36 @@ function Inventario() {
       
       // Buscar categorias reais do banco
       const { data: categoriesData, error: categoriesError } = await supabase
-        .from('categorias_ativos')
+        .from('asset_categories')
         .select('*')
-        .order('nome');
+        .order('name');
 
       if (categoriesError) throw categoriesError;
 
-      // Buscar estatísticas por categoria
-      const { data: statsData, error: statsError } = await supabase
-        .rpc('get_inventory_stats_by_category');
+      // Buscar todos os ativos para calcular estatísticas
+      const { data: assetsData, error: assetsError } = await supabase
+        .from('ativos')
+        .select('category, status')
+        .neq('status', 'Descartado'); // Excluir ativos descartados
 
-      if (statsError) {
-        console.warn('Erro ao buscar estatísticas, usando dados vazios:', statsError);
-        // Se a função RPC não existir, criar estatísticas vazias
-        const emptyStats = {};
-        if (categoriesData) {
-          categoriesData.forEach(category => {
-            emptyStats[category.id] = { estoque: 0, uso: 0, manutencao: 0 };
-          });
-        }
-        setStats(emptyStats);
-      } else {
-        setStats(statsData || {});
+      if (assetsError) throw assetsError;
+
+      // Calcular estatísticas por categoria
+      const calculatedStats = {};
+      
+      if (categoriesData) {
+        categoriesData.forEach(category => {
+          const categoryAssets = assetsData?.filter(asset => asset.category === category.name) || [];
+          
+          calculatedStats[category.name] = {
+            estoque: categoryAssets.filter(asset => asset.status === 'Em estoque').length,
+            uso: categoryAssets.filter(asset => asset.status === 'Em uso').length,
+            manutencao: categoryAssets.filter(asset => asset.status === 'Em manutenção').length
+          };
+        });
       }
 
+      setStats(calculatedStats);
       setCategories(categoriesData || []);
     } catch (error) {
       console.error('Erro ao carregar dados do inventário:', error);
@@ -71,8 +77,8 @@ function Inventario() {
     return iconMap[iconName] || <FaBox />;
   };
 
-  const getTotalByCategory = (categoryId) => {
-    const categoryStats = stats[categoryId] || { estoque: 0, uso: 0, manutencao: 0 };
+  const getTotalByCategory = (categoryName) => {
+    const categoryStats = stats[categoryName] || { estoque: 0, uso: 0, manutencao: 0 };
     return categoryStats.estoque + categoryStats.uso + categoryStats.manutencao;
   };
 
@@ -111,8 +117,8 @@ function Inventario() {
           <div className="stat-content">
             <h3>Total de Itens</h3>
             <p className="stat-value">
-              {Object.keys(stats).reduce((total, categoryId) => 
-                total + getTotalByCategory(parseInt(categoryId)), 0
+              {Object.keys(stats).reduce((total, categoryName) => 
+                total + getTotalByCategory(categoryName), 0
               )}
             </p>
           </div>
@@ -152,17 +158,17 @@ function Inventario() {
       {/* Cards por Categoria */}
       <div className="categories-grid">
         {categories.map(category => {
-          const categoryStats = stats[category.id] || { estoque: 0, uso: 0, manutencao: 0 };
-          const total = getTotalByCategory(category.id);
+          const categoryStats = stats[category.name] || { estoque: 0, uso: 0, manutencao: 0 };
+          const total = getTotalByCategory(category.name);
 
           return (
             <div key={category.id} className="category-card">
               <div className="category-header">
                 <div className="category-icon">
-                  {getCategoryIcon(category.icon)}
+                  {getCategoryIcon(category.icon || 'box')}
                 </div>
                 <div className="category-info">
-                  <h3 className="category-name">{category.nome}</h3>
+                  <h3 className="category-name">{category.name}</h3>
                   <p className="category-total">{total} itens</p>
                 </div>
               </div>

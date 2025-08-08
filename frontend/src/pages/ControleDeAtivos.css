@@ -198,7 +198,11 @@
   padding: var(--spacing-sm);
   z-index: 1001;
   min-width: 160px;
+  max-width: 200px;
   backdrop-filter: var(--backdrop-blur);
+  /* Garantir que o menu não saia da tela */
+  max-height: 300px;
+  overflow-y: auto;
 }
 
 .actions-menu button {
@@ -452,6 +456,9 @@
     right: var(--spacing-md);
     left: auto;
     min-width: 140px;
+    max-width: 180px;
+    /* Ajustar posicionamento em telas menores */
+    transform: translateX(-50%);
   }
 }
 

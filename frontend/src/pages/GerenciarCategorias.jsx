@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { FaPlus, FaTrash, FaChevronDown, FaChevronUp } from 'react-icons/fa';
+import { FaPlus, FaTrash, FaChevronDown, FaChevronUp, FaEdit, FaSave, FaTimes } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 import './GerenciarCategorias.css';
 import './Usuarios.css'; // Reutilizando estilos de formulário para consistência
@@ -44,6 +44,52 @@ const AddFieldForm = ({ categoryId, onFieldAdded }) => {
   );
 };
 
+// --- Componente para editar categoria ---
+const EditCategoryForm = ({ category, onSave, onCancel }) => {
+  const [name, setName] = useState(category.name);
+  const [loading, setLoading] = useState(false);
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+    setLoading(true);
+    
+    const { error } = await supabase
+      .from('asset_categories')
+      .update({ name: name.trim() })
+      .eq('id', category.id);
+
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success('Categoria atualizada!');
+      onSave();
+    }
+    setLoading(false);
+  };
+
+  return (
+    <form onSubmit={handleSave} className="edit-category-form">
+      <input 
+        type="text" 
+        className="form-group"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="Nome da categoria"
+      />
+      <div className="edit-actions">
+        <button type="submit" className="form-button save-button" disabled={loading}>
+          <FaSave style={{ marginRight: '4px' }} />
+          Salvar
+        </button>
+        <button type="button" className="form-button cancel-button" onClick={onCancel}>
+          <FaTimes style={{ marginRight: '4px' }} />
+          Cancelar
+        </button>
+      </div>
+    </form>
+  );
+};
 
 // --- Componente Principal da Página de Gerenciamento ---
 function GerenciarCategorias() {
@@ -52,6 +98,7 @@ function GerenciarCategorias() {
   const [loading, setLoading] = useState(true);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [expandedCategoryId, setExpandedCategoryId] = useState(null); // Controla qual card está aberto
+  const [editingCategoryId, setEditingCategoryId] = useState(null); // Controla qual categoria está sendo editada
 
   const fetchData = async () => {
     try {
@@ -124,6 +171,19 @@ function GerenciarCategorias() {
     }
   };
 
+  const handleEditCategory = (categoryId) => {
+    setEditingCategoryId(categoryId);
+  };
+
+  const handleSaveCategory = () => {
+    setEditingCategoryId(null);
+    fetchData();
+  };
+
+  const handleCancelEdit = () => {
+    setEditingCategoryId(null);
+  };
+
   // Função para abrir/fechar o card (accordion)
   const toggleExpand = (categoryId) => {
     setExpandedCategoryId(prevId => (prevId === categoryId ? null : categoryId));
@@ -136,33 +196,62 @@ function GerenciarCategorias() {
       <h1>Gerenciar Categorias de Ativos</h1>
       <p>Crie e organize as "abas" e os "cabeçalhos" que aparecerão na página de Controle de Ativos.</p>
       
-      <form onSubmit={handleAddCategory} className="add-category-form">
-        <input 
-          type="text" 
-          className="form-group"
-          placeholder="Nome da nova aba (ex: Monitores)" 
-          value={newCategoryName}
-          onChange={(e) => setNewCategoryName(e.target.value)}
-        />
-        <button type="submit" className="form-button">
-          <FaPlus style={{ marginRight: '8px' }} />
-          Criar Nova Categoria
-        </button>
-      </form>
+      <div className="add-category-section">
+        <form onSubmit={handleAddCategory} className="add-category-form">
+          <input 
+            type="text" 
+            className="form-group"
+            placeholder="Nome da nova aba (ex: Monitores)" 
+            value={newCategoryName}
+            onChange={(e) => setNewCategoryName(e.target.value)}
+          />
+          <button type="submit" className="form-button">
+            <FaPlus style={{ marginRight: '8px' }} />
+            Criar Nova Categoria
+          </button>
+        </form>
+      </div>
 
       <div className="categories-container">
         {categories.map(cat => (
           <div key={cat.id} className="category-card">
             <div className="category-card-header" onClick={() => toggleExpand(cat.id)}>
-              <h3>{cat.name}</h3>
-              <div className='category-card-controls'>
-                <button className="delete-button" onClick={(e) => { e.stopPropagation(); handleDeleteCategory(cat.id); }} title="Excluir Categoria">
-                  <FaTrash />
-                </button>
-                {expandedCategoryId === cat.id ? <FaChevronUp /> : <FaChevronDown />}
-              </div>
+              {editingCategoryId === cat.id ? (
+                <EditCategoryForm 
+                  category={cat}
+                  onSave={handleSaveCategory}
+                  onCancel={handleCancelEdit}
+                />
+              ) : (
+                <>
+                  <h3>{cat.name}</h3>
+                  <div className='category-card-controls'>
+                    <button 
+                      className="edit-button" 
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        handleEditCategory(cat.id); 
+                      }} 
+                      title="Editar Categoria"
+                    >
+                      <FaEdit />
+                    </button>
+                    <button 
+                      className="delete-button" 
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        handleDeleteCategory(cat.id); 
+                      }} 
+                      title="Excluir Categoria"
+                    >
+                      <FaTrash />
+                    </button>
+                    {expandedCategoryId === cat.id ? <FaChevronUp /> : <FaChevronDown />}
+                  </div>
+                </>
+              )}
             </div>
-            {expandedCategoryId === cat.id && (
+            {expandedCategoryId === cat.id && editingCategoryId !== cat.id && (
               <div className="category-card-body">
                 <ul className="field-list">
                   {(fields[cat.id] || []).map(field => (

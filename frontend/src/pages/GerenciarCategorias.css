@@ -19,11 +19,15 @@
   margin-bottom: var(--spacing-xl);
 }
 
+/* Seção de Adicionar Categoria */
+.add-category-section {
+  margin-bottom: var(--spacing-xl);
+}
+
 /* Formulário de Adicionar Categoria */
 .add-category-form {
   display: flex;
   gap: var(--spacing-md);
-  margin-bottom: var(--spacing-xl);
   background-color: var(--bg-secondary-color);
   padding: var(--spacing-lg);
   border-radius: var(--border-radius-lg);
@@ -105,20 +109,20 @@
   align-items: center;
   padding: var(--spacing-lg);
   cursor: pointer;
-  background-color: var(--bg-tertiary-color);
-  transition: background-color var(--transition-fast);
+  transition: all var(--transition-fast);
   border-bottom: 1px solid var(--border-color);
 }
 
 .category-card-header:hover {
-  background-color: var(--bg-color);
+  background-color: var(--bg-tertiary-color);
 }
 
 .category-card-header h3 {
-  margin: 0;
   font-size: var(--font-size-lg);
   font-weight: 600;
   color: var(--primary-text-color);
+  margin: 0;
+  flex: 1;
 }
 
 .category-card-controls {
@@ -135,14 +139,11 @@
   padding: var(--spacing-xs);
   border-radius: var(--border-radius-sm);
   transition: all var(--transition-fast);
-  display: flex;
-  align-items: center;
-  justify-content: center;
   font-size: var(--font-size-base);
 }
 
 .category-card-controls button:hover {
-  background-color: var(--bg-color);
+  background-color: var(--bg-tertiary-color);
   color: var(--primary-text-color);
 }
 
@@ -156,14 +157,13 @@
 
 .category-card-body {
   padding: var(--spacing-lg);
-  background-color: var(--bg-secondary-color);
+  background-color: var(--bg-color);
 }
 
-/* Lista de Campos */
 .field-list {
   list-style: none;
   padding: 0;
-  margin: var(--spacing-lg) 0;
+  margin: 0 0 var(--spacing-lg) 0;
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
@@ -173,16 +173,16 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--bg-secondary-color);
   border-radius: var(--border-radius-md);
-  background-color: var(--bg-color);
   border: 1px solid var(--border-color);
   transition: all var(--transition-fast);
 }
 
 .field-list li:hover {
+  background-color: var(--bg-tertiary-color);
   border-color: var(--border-hover-color);
-  box-shadow: var(--shadow-card);
 }
 
 .field-list li span {
@@ -196,27 +196,21 @@
   border: none;
   color: var(--secondary-text-color);
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   padding: var(--spacing-xs);
-  border-radius: 50%;
+  border-radius: var(--border-radius-sm);
   transition: all var(--transition-fast);
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-sm);
 }
 
 .delete-button:hover {
-  color: var(--error-color);
-  background-color: rgba(239, 68, 68, 0.1);
+  background-color: var(--error-color);
+  color: white;
 }
 
-/* Formulário de Adicionar Campo */
 .add-field-form {
   display: flex;
   gap: var(--spacing-sm);
-  border-top: 1px solid var(--border-color);
-  padding-top: var(--spacing-lg);
-  margin-top: var(--spacing-lg);
+  align-items: center;
 }
 
 .add-field-form input {
@@ -224,7 +218,7 @@
   padding: var(--spacing-sm) var(--spacing-md);
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-md);
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-sm);
   background-color: var(--bg-color);
   color: var(--primary-text-color);
   transition: all var(--transition-fast);
@@ -250,7 +244,6 @@
   font-weight: 600;
   cursor: pointer;
   transition: all var(--transition-fast);
-  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -267,6 +260,76 @@
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+}
+
+/* Formulário de Edição */
+.edit-category-form {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+  width: 100%;
+}
+
+.edit-category-form input {
+  flex-grow: 1;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-base);
+  background-color: var(--bg-color);
+  color: var(--primary-text-color);
+  transition: all var(--transition-fast);
+}
+
+.edit-category-form input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(230, 126, 34, 0.1);
+}
+
+.edit-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.save-button {
+  background-color: var(--success-color);
+  color: white;
+  border: none;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+}
+
+.save-button:hover {
+  background-color: var(--success-color-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-card);
+}
+
+.cancel-button {
+  background-color: var(--secondary-text-color);
+  color: white;
+  border: none;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+}
+
+.cancel-button:hover {
+  background-color: var(--secondary-text-color-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-card);
 }
 
 /* Estado Vazio */
@@ -402,7 +465,7 @@
   }
   
   .field-list li {
-    padding: var(--spacing-sm);
+    padding: var(--spacing-xs) var(--spacing-sm);
   }
   
   .field-list li span {
@@ -415,18 +478,20 @@
 @media (prefers-reduced-motion: reduce) {
   .category-card,
   .category-card-header,
-  .field-list li,
-  .add-category-form input,
-  .add-field-form input,
-  .category-card-controls button,
-  .delete-button,
-  .add-button {
+  .add-category-form button,
+  .add-button,
+  .save-button,
+  .cancel-button,
+  .delete-button {
     transition: none;
   }
   
   .category-card:hover,
   .add-category-form button:hover,
-  .add-button:hover {
+  .add-button:hover,
+  .save-button:hover,
+  .cancel-button:hover,
+  .delete-button:hover {
     transform: none;
   }
   
@@ -442,7 +507,9 @@
   }
   
   .add-category-form button,
-  .add-button {
+  .add-button,
+  .save-button,
+  .cancel-button {
     border: 2px solid var(--primary-color);
   }
 }

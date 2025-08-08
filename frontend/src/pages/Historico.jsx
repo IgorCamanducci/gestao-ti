@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { FaSearch, FaFilter, FaDownload, FaEye, FaTrash, FaEdit, FaBox, FaDesktop, FaTools } from 'react-icons/fa';
+import { FaSearch, FaDownload, FaBox } from 'react-icons/fa';
 import './Historico.css';
+import './ControleDeAtivos.css';
 
 function Historico() {
   const [ativos, setAtivos] = useState([]);
   const [categorias, setCategorias] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState('');
+  const [activeTab, setActiveTab] = useState('');
 
   useEffect(() => {
     fetchData();
@@ -21,32 +21,30 @@ function Historico() {
       
       // Buscar categorias
       const { data: categoriasData, error: categoriasError } = await supabase
-        .from('categorias_ativos')
+        .from('asset_categories')
         .select('*')
-        .order('nome');
+        .order('name');
 
       if (categoriasError) throw categoriasError;
 
-      // Buscar ativos com baixa (status = 'baixa')
+      // Buscar ativos com baixa (status = 'Descartado')
       const { data: ativosData, error: ativosError } = await supabase
         .from('ativos')
-        .select(`
-          *,
-          categorias_ativos (
-            id,
-            nome
-          )
-        `)
-        .eq('status', 'baixa')
-        .order('data_baixa', { ascending: false });
+        .select('*')
+        .eq('status', 'Descartado')
+        .order('decommission_date', { ascending: false });
 
       if (ativosError) throw ativosError;
 
       setCategorias(categoriasData || []);
       setAtivos(ativosData || []);
+      
+      // Definir primeira categoria como ativa
+      if (categoriasData && categoriasData.length > 0) {
+        setActiveTab(categoriasData[0].name);
+      }
     } catch (error) {
       console.error('Erro ao carregar dados do histórico:', error);
-      // Se não conseguir buscar dados reais, mostrar estado vazio
       setCategorias([]);
       setAtivos([]);
     } finally {
@@ -54,30 +52,33 @@ function Historico() {
     }
   };
 
-  const filteredAtivos = ativos.filter(ativo => {
-    const matchesSearch = ativo.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         ativo.categorias_ativos?.nome.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = !selectedCategory || ativo.categoria_id === parseInt(selectedCategory);
-    const matchesStatus = !selectedStatus || ativo.status === selectedStatus;
-    
-    return matchesSearch && matchesCategory && matchesStatus;
-  });
+  // Filtrar ativos por categoria ativa e termo de busca
+  const filteredAtivos = useMemo(() => {
+    return ativos.filter(ativo => {
+      const matchesCategory = !activeTab || ativo.category === activeTab;
+      const matchesSearch = !searchTerm || 
+        ativo.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        ativo.asset_tag?.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      return matchesCategory && matchesSearch;
+    });
+  }, [ativos, activeTab, searchTerm]);
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'baixa':
-        return <FaTrash />;
+      case 'Descartado':
+        return <FaBox />;
       default:
         return <FaBox />;
     }
   };
 
-  const getStatusColor = (status) => {
+  const getStatusClass = (status) => {
     switch (status) {
-      case 'baixa':
-        return 'baixa';
+      case 'Descartado':
+        return 'status-descartado';
       default:
-        return 'default';
+        return '';
     }
   };
 
@@ -88,13 +89,14 @@ function Historico() {
 
   const handleExport = () => {
     const csvContent = [
-      ['Nome', 'Categoria', 'Status', 'Data de Baixa', 'Motivo da Baixa'],
+      ['Nome', 'Etiqueta', 'Categoria', 'Status', 'Data de Baixa', 'Motivo da Baixa'],
       ...filteredAtivos.map(ativo => [
-        ativo.nome,
-        ativo.categorias_ativos?.nome || '-',
+        ativo.name,
+        ativo.asset_tag || '-',
+        ativo.category || '-',
         ativo.status,
-        formatDate(ativo.data_baixa),
-        ativo.motivo_baixa || '-'
+        formatDate(ativo.decommission_date),
+        ativo.decommission_reason || '-'
       ])
     ].map(row => row.join(',')).join('\n');
 
@@ -122,137 +124,91 @@ function Historico() {
 
   return (
     <div className="historico-container">
-      <div className="historico-header">
-        <div className="header-content">
-          <h1 className="historico-title">📋 Histórico de Ativos</h1>
-          <p className="historico-subtitle">
-            Visualize todos os ativos que foram dados baixa no sistema
-          </p>
-        </div>
-        <div className="header-actions">
-          <button className="export-button" onClick={handleExport}>
-            <FaDownload />
+      {/* Header da página */}
+      <div className="assets-page-header">
+        <h1>📋 Histórico de Ativos</h1>
+        <div className="search-and-actions">
+          <input 
+            type="search" 
+            placeholder="Buscar por nome ou etiqueta..." 
+            className="search-input" 
+            value={searchTerm} 
+            onChange={(e) => setSearchTerm(e.target.value)} 
+          />
+          <button className="form-button" onClick={handleExport}>
+            <FaDownload style={{ marginRight: '8px' }} />
             Exportar CSV
           </button>
         </div>
       </div>
 
-      {/* Filtros */}
-      <div className="filters-section">
-        <div className="search-container">
-          <div className="search-input-wrapper">
-            <FaSearch className="search-icon" />
-            <input
-              type="text"
-              placeholder="Buscar por nome ou categoria..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="search-input"
-            />
-          </div>
-        </div>
-
-        <div className="filters-row">
-          <div className="filter-group">
-            <label className="filter-label">Categoria:</label>
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="filter-select"
-            >
-              <option value="">Todas as categorias</option>
-              {categorias.map(categoria => (
-                <option key={categoria.id} value={categoria.id}>
-                  {categoria.nome}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="filter-group">
-            <label className="filter-label">Status:</label>
-            <select
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="filter-select"
-            >
-              <option value="">Todos os status</option>
-              <option value="baixa">Baixa</option>
-            </select>
-          </div>
-        </div>
+      {/* Abas de categorias */}
+      <div className="asset-tabs">
+        {categorias.map(category => (
+          <button 
+            key={category.id} 
+            onClick={() => setActiveTab(category.name)} 
+            className={activeTab === category.name ? 'active' : ''}
+          >
+            {category.name}
+          </button>
+        ))}
       </div>
 
-      {/* Resultados */}
-      <div className="results-section">
-        <div className="results-header">
-          <h3 className="results-title">
-            Resultados ({filteredAtivos.length} itens)
-          </h3>
-        </div>
-
-        {filteredAtivos.length > 0 ? (
-          <div className="table-container">
-            <table className="historico-table">
-              <thead>
-                <tr>
-                  <th>Nome</th>
-                  <th>Categoria</th>
-                  <th>Status</th>
-                  <th>Data de Baixa</th>
-                  <th>Motivo da Baixa</th>
-                  <th>Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredAtivos.map(ativo => (
-                  <tr key={ativo.id} className="table-row">
+      {/* Tabela de resultados */}
+      <div className="asset-table-container">
+        <table className="asset-table">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Etiqueta</th>
+              <th>Status</th>
+              <th>Data de Baixa</th>
+              <th>Motivo da Baixa</th>
+            </tr>
+          </thead>
+          <tbody>
+            {categorias.length > 0 && activeTab ? (
+              filteredAtivos.length > 0 ? (
+                filteredAtivos.map(ativo => (
+                  <tr key={ativo.id}>
                     <td className="asset-name">
                       <div className="asset-info">
                         <span className="asset-icon">
                           {getStatusIcon(ativo.status)}
                         </span>
-                        <span>{ativo.nome}</span>
+                        <span>{ativo.name}</span>
                       </div>
                     </td>
-                    <td className="asset-category">
-                      {ativo.categorias_ativos?.nome || '-'}
-                    </td>
-                    <td className="asset-status">
-                      <span className={`status-badge ${getStatusColor(ativo.status)}`}>
-                        {ativo.status === 'baixa' ? 'Baixa' : ativo.status}
+                    <td>{ativo.asset_tag || '-'}</td>
+                    <td className={getStatusClass(ativo.status)}>
+                      <span className="status-badge descartado">
+                        {ativo.status === 'Descartado' ? 'Baixa' : ativo.status}
                       </span>
                     </td>
-                    <td className="asset-date">
-                      {formatDate(ativo.data_baixa)}
-                    </td>
-                    <td className="asset-reason">
-                      {ativo.motivo_baixa || '-'}
-                    </td>
-                    <td className="asset-actions">
-                      <button className="action-button view" title="Visualizar detalhes">
-                        <FaEye />
-                      </button>
-                    </td>
+                    <td>{formatDate(ativo.decommission_date)}</td>
+                    <td>{ativo.decommission_reason || '-'}</td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="empty-state">
-            <div className="empty-icon">
-              <FaBox />
-            </div>
-            <h3>Nenhum item encontrado</h3>
-            <p>
-              {searchTerm || selectedCategory || selectedStatus
-                ? 'Tente ajustar os filtros de busca.'
-                : 'Não há itens com baixa registrados no sistema.'
-              }
-            </p>
-          </div>
-        )}
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={5} className="empty-state">
+                    Nenhum ativo com baixa encontrado para esta categoria.
+                  </td>
+                </tr>
+              )
+            ) : (
+              <tr>
+                <td colSpan={5} className="empty-state">
+                  <span>
+                    Nenhuma categoria de ativo foi criada. Vá para a{' '}
+                    <a href="/configuracoes/categorias-ativos">página de gerenciamento</a> para começar.
+                  </span>
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );

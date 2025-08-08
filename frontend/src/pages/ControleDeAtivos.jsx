@@ -34,7 +34,9 @@ const ActionsMenu = ({ asset, position, onClose, onEdit, onDelete, onDecommissio
 const AssetModal = ({ onClose, onSave, existingAsset, categories, fieldsConfig }) => {
   const [asset, setAsset] = useState(
     existingAsset || {
-      name: '', asset_tag: '', category: categories[0]?.name || '', status: 'Em estoque', assigned_to: '', metadata: {}
+      serial_number: '',
+      category: categories[0]?.name || '', 
+      metadata: {}
     }
   );
   const [loading, setLoading] = useState(false);
@@ -67,16 +69,38 @@ const AssetModal = ({ onClose, onSave, existingAsset, categories, fieldsConfig }
       <div className="modal-content" onClick={e => e.stopPropagation()}>
         <h2>{existingAsset ? 'Editar' : 'Adicionar Novo'} Ativo</h2>
         <form onSubmit={handleSubmit}>
-          <div className="form-group"><label>Categoria</label><select name="category" value={asset.category} onChange={handleChange} disabled={categories.length === 0}>{categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}</select></div>
-          <div className="form-group"><label>Nome do Ativo</label><input name="name" type="text" value={asset.name} onChange={handleChange} required /></div>
-          <div className="form-group"><label>Etiqueta de Patrimônio</label><input name="asset_tag" type="text" value={asset.asset_tag} onChange={handleChange} required disabled={!!existingAsset} /></div>
-          <div className="form-group"><label>Status</label><select name="status" value={asset.status} onChange={handleChange}><option>Em estoque</option><option>Em uso</option><option>Em manutenção</option></select></div>
-          <div className="form-group"><label>Atribuído a (Opcional)</label><input name="assigned_to" type="text" placeholder="Nome do responsável" value={asset.assigned_to || ''} onChange={handleChange} /></div>
+          <div className="form-group">
+            <label>Categoria</label>
+            <select name="category" value={asset.category} onChange={handleChange} disabled={categories.length === 0}>
+              {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+            </select>
+          </div>
+          
+          <div className="form-group">
+            <label>Número de Série *</label>
+            <input 
+              name="serial_number" 
+              type="text" 
+              value={asset.serial_number} 
+              onChange={handleChange} 
+              required 
+              disabled={!!existingAsset}
+              placeholder="Digite o número de série"
+            />
+          </div>
           
           {customFields.map(field => (
             <div className="form-group" key={field.id}>
               <label>{field.field_label}</label>
-              <input type={field.field_type} value={asset.metadata?.[field.field_name] || ''} onChange={e => handleMetadataChange(field.field_name, e.target.value)} />
+              <input 
+                type={field.field_type} 
+                value={asset.metadata?.[field.field_name] || ''} 
+                onChange={e => handleMetadataChange(field.field_name, e.target.value)}
+                required={field.field_label.toLowerCase().includes('obrigatório') || 
+                         field.field_label.toLowerCase().includes('nome') ||
+                         field.field_label.toLowerCase().includes('número') ||
+                         field.field_label.toLowerCase().includes('imei')}
+              />
             </div>
           ))}
 
@@ -107,11 +131,17 @@ const DecommissionModal = ({ asset, onClose, onDecommission }) => {
     return (
         <div className="modal-overlay" onClick={onClose}>
             <div className="modal-content" onClick={e => e.stopPropagation()}>
-                <h2>Dar Baixa no Ativo: {asset.name}</h2>
+                <h2>Dar Baixa no Ativo</h2>
                 <p>O status do ativo será alterado para "Descartado". O ativo sairá desta tela de controle.</p>
                 <form onSubmit={handleSubmit}>
-                    <div className="form-group"><label htmlFor="decommission_date">Data da Baixa</label><input type="date" id="decommission_date" value={decommissionDate} onChange={(e) => setDecommissionDate(e.target.value)} required /></div>
-                    <div className="form-group"><label htmlFor="decommission_reason">Motivo da Baixa (Opcional)</label><textarea id="decommission_reason" className="form-group" rows="4" value={reason} onChange={e => setReason(e.target.value)} /></div>
+                    <div className="form-group">
+                        <label htmlFor="decommission_date">Data da Baixa</label>
+                        <input type="date" id="decommission_date" value={decommissionDate} onChange={(e) => setDecommissionDate(e.target.value)} required />
+                    </div>
+                    <div className="form-group">
+                        <label htmlFor="decommission_reason">Motivo da Baixa (Opcional)</label>
+                        <textarea id="decommission_reason" rows="4" value={reason} onChange={e => setReason(e.target.value)} />
+                    </div>
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
                         <button type="button" onClick={onClose} className="form-button" style={{ background: 'var(--secondary-text-color)' }}>Cancelar</button>
                         <button type="submit" className="form-button" disabled={loading} style={{ background: '#dc3545' }}>{loading ? 'Confirmando...' : 'Confirmar Baixa'}</button>
@@ -140,10 +170,16 @@ const MaintenanceModal = ({ asset, onClose, onSave }) => {
         <div className="modal-overlay" onClick={onClose}>
             <div className="modal-content" onClick={e => e.stopPropagation()}>
                 <h2>Enviar para Manutenção</h2>
-                <p>O status de <strong>{asset.name}</strong> será "Em manutenção" e um registro será criado no histórico.</p>
+                <p>O status do ativo será "Em manutenção" e um registro será criado no histórico.</p>
                 <form onSubmit={handleSubmit}>
-                    <div className="form-group"><label htmlFor="maintenance_date">Data de Envio</label><input id="maintenance_date" type="date" value={maintenanceDate} onChange={e => setMaintenanceDate(e.target.value)} required /></div>
-                    <div className="form-group"><label htmlFor="description">Motivo / Descrição do Problema</label><textarea id="description" className="form-group" rows="4" value={description} onChange={e => setDescription(e.target.value)} required /></div>
+                    <div className="form-group">
+                        <label htmlFor="maintenance_date">Data de Envio</label>
+                        <input id="maintenance_date" type="date" value={maintenanceDate} onChange={e => setMaintenanceDate(e.target.value)} required />
+                    </div>
+                    <div className="form-group">
+                        <label htmlFor="description">Motivo / Descrição do Problema</label>
+                        <textarea id="description" rows="4" value={description} onChange={e => setDescription(e.target.value)} required />
+                    </div>
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
                         <button type="button" onClick={onClose} className="form-button" style={{ background: 'var(--secondary-text-color)' }}>Cancelar</button>
                         <button type="submit" className="form-button" disabled={loading}>{loading ? 'Enviando...' : 'Enviar para Manutenção'}</button>
@@ -153,9 +189,6 @@ const MaintenanceModal = ({ asset, onClose, onSave }) => {
         </div>
     );
 };
-
-
-
 
 // --- Componente Principal da Página ---
 function ControleDeAtivos() {
@@ -172,7 +205,7 @@ function ControleDeAtivos() {
     try {
       setLoading(true);
       const [assetsRes, categoriesRes, fieldsRes] = await Promise.all([
-        supabase.from('ativos').select('*').neq('status', 'Descartado').order('name', { ascending: true }),
+        supabase.from('ativos').select('*').neq('status', 'Descartado').neq('status', 'Em manutenção').order('created_at', { ascending: true }),
         supabase.from('asset_categories').select('*').order('name'),
         supabase.from('asset_category_fields').select('*').order('display_order')
       ]);
@@ -202,6 +235,7 @@ function ControleDeAtivos() {
       }, {});
       setFieldsConfig(fieldsByCatName);
     } catch (error) {
+      console.error('Erro ao carregar dados:', error);
       toast.error('Erro ao carregar dados: ' + error.message);
     } finally {
       setLoading(false);
@@ -211,120 +245,190 @@ function ControleDeAtivos() {
   useEffect(() => {
     fetchInitialData();
   }, []);
-  
+
   const handleSaveAsset = async (assetData, isEditing) => {
-    const toastId = toast.loading(isEditing ? 'Atualizando ativo...' : 'Criando novo ativo...');
     try {
-      const { id, ...dataToSave } = assetData;
-      if (isEditing) {
-        const { error } = await supabase.from('ativos').update(dataToSave).eq('id', id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from('ativos').insert([dataToSave]).select();
-        if (error) {
-            if (error.message.includes('duplicate key value violates unique constraint "ativos_asset_tag_key"')) {
-                throw new Error('A Etiqueta de Patrimônio informada já existe!');
-            }
-            throw error;
-        }
+      const toastId = toast.loading(isEditing ? 'Atualizando ativo...' : 'Criando ativo...');
+      
+      // Validar se o número de série foi preenchido
+      if (!assetData.serial_number || assetData.serial_number.trim() === '') {
+        toast.error('Número de série é obrigatório!', { id: toastId });
+        return false;
       }
-      toast.success(`Ativo ${isEditing ? 'atualizado' : 'criado'} com sucesso!`, { id: toastId });
+      
+      // Preparar dados para salvar
+      const dataToSave = {
+        category: assetData.category,
+        serial_number: assetData.serial_number.trim(),
+        metadata: assetData.metadata || {}
+      };
+
+      // Se for edição, incluir o ID
+      if (isEditing && assetData.id) {
+        dataToSave.id = assetData.id;
+      }
+
+      const { error } = await supabase.from('ativos')[isEditing ? 'update' : 'insert'](dataToSave);
+      if (error) {
+        // Verificar se é erro de número de série duplicado
+        if (error.message.includes('serial_number') || 
+            error.message.includes('série') || 
+            error.message.includes('already exists') ||
+            error.message.includes('duplicate key')) {
+          throw new Error('Este número de série já está em uso por outro ativo ativo.');
+        }
+        throw error;
+      }
+      toast.success(isEditing ? 'Ativo atualizado!' : 'Ativo criado!', { id: toastId });
       fetchInitialData();
       return true;
     } catch (error) {
-      toast.error(`Erro: ${error.message}`, { id: toastId });
+      toast.error(error.message);
       return false;
     }
   };
 
   const handleDeleteAsset = async (assetId) => {
-    if (!window.confirm('Tem certeza? Esta ação não pode ser desfeita.')) return;
-    const toastId = toast.loading('Excluindo ativo...');
-    try {
+    if (window.confirm('Tem certeza que deseja excluir este ativo?')) {
+      const toastId = toast.loading('Excluindo ativo...');
       const { error } = await supabase.from('ativos').delete().eq('id', assetId);
-      if (error) throw error;
-      toast.success('Ativo excluído com sucesso!', { id: toastId });
-      fetchInitialData();
-    } catch(error) {
-      toast.error('Erro ao excluir ativo: ' + error.message, { id: toastId });
+      if (error) toast.error(error.message, { id: toastId });
+      else {
+        toast.success('Ativo excluído!', { id: toastId });
+        fetchInitialData();
+      }
     }
   };
-  
+
   const handleDecommissionAsset = async (assetId, reason, decommissionDate) => {
-    const toastId = toast.loading('Dando baixa no ativo...');
     try {
-      const { error } = await supabase.from('ativos').update({
-        status: 'Descartado',
-        decommission_date: decommissionDate,
-        decommission_reason: reason
-      }).eq('id', assetId);
+      const toastId = toast.loading('Registrando baixa...');
+      
+      // Atualizar o ativo diretamente na tabela ativos
+      const { error } = await supabase
+        .from('ativos')
+        .update({
+          status: 'Descartado',
+          decommission_date: decommissionDate,
+          decommission_reason: reason
+        })
+        .eq('id', assetId);
+
       if (error) throw error;
-      toast.success('Ativo baixado com sucesso!', { id: toastId });
+      
+      toast.success('Baixa registrada com sucesso!', { id: toastId });
       fetchInitialData();
       return true;
     } catch (error) {
-      toast.error('Erro ao dar baixa: ' + error.message, { id: toastId });
+      toast.error('Erro ao dar baixa: ' + error.message);
       return false;
     }
   };
 
   const handleSendToMaintenance = async (assetId, { maintenanceDate, description }) => {
-    const toastId = toast.loading('Enviando para manutenção...');
     try {
-        const { error: updateError } = await supabase.from('ativos').update({ status: 'Em manutenção' }).eq('id', assetId);
-        if (updateError) throw updateError;
-        const { error: insertError } = await supabase.from('manutencao_ativos').insert({
-            asset_id: assetId,
-            maintenance_date: maintenanceDate,
-            description: description
-        });
-        if (insertError) throw insertError;
-        toast.success('Ativo enviado para manutenção!', {id: toastId});
-        fetchInitialData();
-        return true;
+      const toastId = toast.loading('Enviando para manutenção...');
+      
+      // Atualizar status do ativo
+      const { error: updateError } = await supabase
+        .from('ativos')
+        .update({ status: 'Em manutenção' })
+        .eq('id', assetId);
+
+      if (updateError) throw updateError;
+
+      // Registrar na tabela de manutenção
+      const { error: maintenanceError } = await supabase
+        .from('manutencao_ativos')
+        .insert([{
+          asset_id: assetId,
+          maintenance_date: maintenanceDate,
+          description: description,
+          performed_by: 'Sistema'
+        }]);
+
+      if (maintenanceError) throw maintenanceError;
+
+      toast.success('Ativo enviado para manutenção!', { id: toastId });
+      fetchInitialData();
+      return true;
     } catch (error) {
-        toast.error('Erro: ' + error.message, {id: toastId});
-        return false;
+      toast.error('Erro ao enviar para manutenção: ' + error.message);
+      return false;
     }
   };
 
   const handleMenuClick = (asset, event) => {
     event.stopPropagation();
     const rect = event.currentTarget.getBoundingClientRect();
-    const leftPosition = rect.right - 180;
-    setMenuState({ asset, position: { top: rect.bottom + window.scrollY + 5, left: leftPosition + window.scrollX } });
+    const menuWidth = 160; // Largura estimada do menu
+    const windowWidth = window.innerWidth;
+    
+    // Calcular posição horizontal
+    let left = rect.left + window.scrollX;
+    
+    // Se o menu vai sair da tela pela direita, posicionar à esquerda do botão
+    if (left + menuWidth > windowWidth - 20) {
+      left = rect.right + window.scrollX - menuWidth;
+    }
+    
+    // Garantir que não saia pela esquerda
+    if (left < 20) {
+      left = 20;
+    }
+    
+    setMenuState({
+      asset,
+      position: {
+        top: rect.bottom + window.scrollY + 5,
+        left: left
+      }
+    });
   };
-  
+
   const filteredAssets = useMemo(() => {
-    if (!activeTab) return [];
     return assets.filter(asset => 
       (asset.category === activeTab) &&
       (searchTerm.trim() === '' || 
-        asset.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        asset.asset_tag.toLowerCase().includes(searchTerm.toLowerCase()))
+        // Buscar no número de série
+        (asset.serial_number && asset.serial_number.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        // Buscar nos campos configurados
+        Object.values(asset.metadata || {}).some(value => 
+          value && value.toString().toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      )
     );
   }, [assets, activeTab, searchTerm]);
   
   const currentHeaders = useMemo(() => {
-    const baseHeaders = ['Nome', 'Etiqueta', 'Status'];
+    // Se não há categoria ativa ou não há configuração, não mostra nada
     if (!activeTab || !fieldsConfig[activeTab]) {
-      return baseHeaders;
+      return [];
     }
+    
+    // Busca os campos configurados para a categoria ativa
     const customFields = fieldsConfig[activeTab] || [];
     const customHeaders = customFields.map(f => f.field_label);
-    return [...baseHeaders, ...customHeaders];
+    
+    // Retorna número de série + campos configurados
+    return ['Número de Série', ...customHeaders];
   }, [activeTab, fieldsConfig]);
 
   const getAssetValue = (asset, header) => {
-    switch (header) {
-      case 'Nome': return asset.name;
-      case 'Etiqueta': return asset.asset_tag;
-      case 'Status': return asset.status;
-      default:
-        const categoryFields = fieldsConfig[asset.category] || [];
-        const fieldConfig = categoryFields.find(f => f.field_label === header);
-        return fieldConfig && asset.metadata ? (asset.metadata[fieldConfig.field_name] || '---') : '---';
+    // Se for número de série, retorna direto
+    if (header === 'Número de Série') {
+      return asset.serial_number || '---';
     }
+    
+    // Busca o campo configurado pelo label
+    const categoryFields = fieldsConfig[asset.category] || [];
+    const fieldConfig = categoryFields.find(f => f.field_label === header);
+    
+    if (fieldConfig && asset.metadata) {
+      return asset.metadata[fieldConfig.field_name] || '---';
+    }
+    
+    return '---';
   };
 
   const getStatusClass = (status) => {
@@ -343,7 +447,7 @@ function ControleDeAtivos() {
       <div className="assets-page-header">
         <h1>Controle de Ativos</h1>
         <div className="search-and-actions">
-          <input type="search" placeholder="Buscar por nome ou etiqueta..." className="search-input" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+          <input type="search" placeholder="Buscar por número de série ou campos configurados..." className="search-input" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           <button className="form-button" onClick={() => setModalState({ type: 'add', asset: null })} disabled={categories.length === 0}>
             <FaPlus style={{ marginRight: '8px' }} />
             Novo Ativo
@@ -358,20 +462,20 @@ function ControleDeAtivos() {
       </div>
 
       <div className="asset-table-container">
-        <table className="asset-table">
-          <thead>
-            <tr>
-              {currentHeaders.map(header => <th key={header}>{header}</th>)}
-              <th style={{textAlign: 'right'}}>Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {categories.length > 0 && activeTab ? (
-              filteredAssets.length > 0 ? (
+        {categories.length > 0 && activeTab && currentHeaders.length > 0 ? (
+          <table className="asset-table">
+            <thead>
+              <tr>
+                {currentHeaders.map(header => <th key={header}>{header}</th>)}
+                <th style={{textAlign: 'right'}}>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredAssets.length > 0 ? (
                 filteredAssets.map(asset => (
                   <tr key={asset.id}>
                     {currentHeaders.map(header => (
-                      <td key={header} className={header === 'Status' ? getStatusClass(getAssetValue(asset, header)) : ''}>
+                      <td key={header}>
                         {getAssetValue(asset, header)}
                       </td>
                     ))}
@@ -384,14 +488,22 @@ function ControleDeAtivos() {
                 ))
               ) : (
                 <tr><td colSpan={currentHeaders.length + 1} className="empty-state">Nenhum ativo encontrado para esta categoria.</td></tr>
-              )
-            ) : (
-              <tr><td colSpan={4} className="empty-state">
-                <span>Nenhuma categoria de ativo foi criada. Vá para a <Link to="/configuracoes/categorias-ativos">página de gerenciamento</Link> para começar.</span>
-              </td></tr>
-            )}
-          </tbody>
-        </table>
+              )}
+            </tbody>
+          </table>
+        ) : categories.length === 0 ? (
+          <div className="empty-state">
+            <span>Nenhuma categoria de ativo foi criada. Vá para a <Link to="/configuracoes/categorias-ativos">página de gerenciamento</Link> para começar.</span>
+          </div>
+        ) : activeTab && (!fieldsConfig[activeTab] || fieldsConfig[activeTab].length === 0) ? (
+          <div className="empty-state">
+            <span>A categoria "{activeTab}" não possui campos configurados. Vá para a <Link to="/configuracoes/categorias-ativos">página de gerenciamento</Link> para adicionar campos.</span>
+          </div>
+        ) : (
+          <div className="empty-state">
+            <span>Selecione uma categoria para visualizar os ativos.</span>
+          </div>
+        )}
       </div>
 
       {menuState.asset && (

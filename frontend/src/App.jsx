@@ -21,6 +21,7 @@ import Usuarios from './pages/Usuarios.jsx';
 import Configuracoes from './pages/Configuracoes.jsx';
 import GerenciarCategorias from './pages/GerenciarCategorias.jsx';
 import Historico from './pages/Historico.jsx'; // <-- Nova página importada
+import AtivosEmManutencao from './pages/AtivosEmManutencao.jsx';
 import Logout from './pages/Logout.jsx';
 
 const router = createBrowserRouter([
@@ -33,6 +34,7 @@ const router = createBrowserRouter([
       { path: 'ferias', element: <GestaoDeFerias /> },
       { path: 'inventario', element: <Inventario /> },
       { path: 'ativos', element: <ControleDeAtivos /> },
+      { path: 'manutencao', element: <AtivosEmManutencao /> },
       { path: 'estoque', element: <ControleDeEstoque /> },
       { path: 'turno', element: <TrocaDeTurno /> },
       { path: 'pendencias', element: <Pendencias /> },
