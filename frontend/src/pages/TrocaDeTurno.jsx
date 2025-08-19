@@ -144,6 +144,51 @@ const HistoryModal = ({ shift, onClose, onView }) => {
   );
 };
 
+// --- Modal de Visualização (somente leitura) ---
+const ViewShiftModal = ({ shift, onClose, onView }) => {
+  useEffect(() => {
+    if (onView && shift?.id) onView(shift.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shift?.id]);
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={e => e.stopPropagation()}>
+        <h2>Detalhes da Troca de Turno</h2>
+        <div className="form-group">
+          <label>Data e Hora</label>
+          <input type="text" readOnly value={`${shift?.shift_date || ''} ${shift?.shift_time || ''}`} />
+        </div>
+        <div className="form-group">
+          <label>Descrição</label>
+          <textarea readOnly rows="4" value={shift?.description || ''} />
+        </div>
+        <div className="form-group">
+          <label>Criado por</label>
+          <input type="text" readOnly value={shift?.creator_name || 'Usuário'} />
+        </div>
+        {shift?.viewers && shift.viewers.length > 0 && (
+          <div className="form-group">
+            <label>Visualizado por</label>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {shift.viewers.map(v => (
+                v.avatarUrl ? (
+                  <img key={v.userId} src={v.avatarUrl} title={`${v.name} • ${new Date(v.at).toLocaleString('pt-BR')}`} alt={v.name} style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--border-color)' }} />
+                ) : (
+                  <span key={v.userId} className="chip" title={`${v.name} • ${new Date(v.at).toLocaleString('pt-BR')}`}>{v.name.split(' ')[0]}</span>
+                )
+              ))}
+            </div>
+          </div>
+        )}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
+          <button type="button" className="form-button" onClick={onClose}>Fechar</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // --- Componente Principal da Página ---
 function TrocaDeTurno() {
   const { user } = useAuth();
@@ -180,19 +225,28 @@ function TrocaDeTurno() {
       (profilesRes.data || []).forEach(p => { profileById[p.id] = p; });
       const viewsByShift = {};
       const viewsRows = viewsRes?.error ? [] : (viewsRes.data || []);
+      // Deduplica por usuário mantendo a visualização mais recente
       viewsRows.forEach(v => {
-        if (!viewsByShift[v.shift_change_id]) viewsByShift[v.shift_change_id] = [];
         const viewer = profileById[v.viewed_by];
-        viewsByShift[v.shift_change_id].push({
+        const entry = {
+          userId: v.viewed_by,
           name: viewer?.full_name || v.viewed_by,
           avatarUrl: viewer?.avatar_url || null,
-          at: v.created_at
-        });
+          at: v.created_at,
+        };
+        if (!viewsByShift[v.shift_change_id]) {
+          viewsByShift[v.shift_change_id] = new Map([[v.viewed_by, entry]]);
+        } else {
+          const existing = viewsByShift[v.shift_change_id].get(v.viewed_by);
+          if (!existing || new Date(entry.at) > new Date(existing.at)) {
+            viewsByShift[v.shift_change_id].set(v.viewed_by, entry);
+          }
+        }
       });
       const attach = (arr) => (arr || []).map(s => ({
         ...s,
         creator_name: profileById[s.created_by]?.full_name || 'Usuário',
-        viewers: viewsByShift[s.id] || []
+        viewers: viewsByShift[s.id] ? Array.from(viewsByShift[s.id].values()).sort((a,b)=> new Date(b.at)-new Date(a.at)) : []
       }));
       setShifts(attach(activeShiftsRes.data));
       setArchivedShifts(attach(archivedShiftsRes.data));
@@ -214,15 +268,19 @@ function TrocaDeTurno() {
     try {
       let error;
       if (isEditing) {
+        const { id, description, shift_date, shift_time, status } = shiftData;
+        const payload = { description, shift_date, shift_time, status };
         const { error: updateError } = await supabase
           .from('shift_changes')
-          .update(shiftData)
-          .eq('id', shiftData.id);
+          .update(payload)
+          .eq('id', id);
         error = updateError;
       } else {
+        const { description, shift_date, shift_time, status } = shiftData;
+        const payload = { description, shift_date, shift_time, status };
         const { error: insertError } = await supabase
           .from('shift_changes')
-          .insert({ ...shiftData, created_by: user.id });
+          .insert({ ...payload, created_by: user.id });
         error = insertError;
       }
       
@@ -332,7 +390,12 @@ function TrocaDeTurno() {
             {shifts.length > 0 ? (
               <div className="shifts-grid">
                 {shifts.map(shift => (
-                  <div key={shift.id} className="shift-card">
+                  <div
+                    key={shift.id}
+                    className="shift-card"
+                    onClick={() => setModalState({ type: 'view', shift })}
+                    title="Clique para ver detalhes"
+                  >
                     <div className="shift-header" />
                     
                     <div className="shift-details">
@@ -352,7 +415,7 @@ function TrocaDeTurno() {
                         </span>
                         {shift.viewers && shift.viewers.length > 0 && (
                           <span className="shift-viewers" title={shift.viewers.map(v => `${v.name} • ${new Date(v.at).toISOString()}`).join('\n')}>
-                            Visto por: {shift.viewers.slice(0, 3).map(v => v.name).join(', ')}{shift.viewers.length > 3 ? ` +${shift.viewers.length - 3}` : ''}
+                            Visto por: {shift.viewers.slice(0, 2).map(v => v.name.split(' ')[0]).join(', ')}{shift.viewers.length > 2 ? ` +${shift.viewers.length - 2}` : ''}
                           </span>
                         )}
                         {shift.updated_at !== shift.created_at && (
@@ -366,7 +429,7 @@ function TrocaDeTurno() {
                     <div className="shift-actions">
                       <button 
                         className="action-btn edit"
-                        onClick={() => setModalState({ type: 'edit', shift: shift })}
+                        onClick={(e) => { e.stopPropagation(); setModalState({ type: 'edit', shift }); }}
                         title="Editar"
                       >
                         <FaEdit />
@@ -374,7 +437,7 @@ function TrocaDeTurno() {
                       
                       <button 
                         className="action-btn history"
-                        onClick={() => setModalState({ type: 'history', shift: shift })}
+                        onClick={(e) => { e.stopPropagation(); setModalState({ type: 'view', shift }); }}
                         title="Ver histórico"
                       >
                         <FaHistory />
@@ -382,11 +445,11 @@ function TrocaDeTurno() {
 
                       {shift.viewers && shift.viewers.length > 0 && (
                         <div className="viewers-avatars" style={{ display: 'flex', gap: '6px', marginLeft: 'auto' }}>
-                          {shift.viewers.slice(0, 5).map((v, idx) => (
+                          {shift.viewers.slice(0, 5).map((v) => (
                             v.avatarUrl ? (
-                              <img key={idx} src={v.avatarUrl} title={`${v.name} • ${new Date(v.at).toISOString()}`} alt={v.name} style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--border-color)' }} />
+                              <img key={v.userId} src={v.avatarUrl} title={`${v.name} • ${new Date(v.at).toISOString()}`} alt={v.name} style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--border-color)' }} />
                             ) : (
-                              <div key={idx} className="avatar-dot" title={`${v.name} • ${new Date(v.at).toISOString()}`}></div>
+                              <div key={v.userId} className="avatar-dot" title={`${v.name} • ${new Date(v.at).toISOString()}`}></div>
                             )
                           ))}
                         </div>
@@ -394,7 +457,7 @@ function TrocaDeTurno() {
                       
                       <button 
                         className="action-btn archive"
-                        onClick={() => handleArchiveShift(shift.id)}
+                        onClick={(e) => { e.stopPropagation(); handleArchiveShift(shift.id); }}
                         title="Arquivar"
                       >
                         <FaArchive />
@@ -462,11 +525,11 @@ function TrocaDeTurno() {
 
                       {shift.viewers && shift.viewers.length > 0 && (
                         <div className="viewers-avatars" style={{ display: 'flex', gap: '6px', marginLeft: 'auto' }}>
-                          {shift.viewers.slice(0, 5).map((v, idx) => (
+                          {shift.viewers.slice(0, 5).map((v) => (
                             v.avatarUrl ? (
-                              <img key={idx} src={v.avatarUrl} title={`${v.name} • ${new Date(v.at).toISOString()}`} alt={v.name} style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--border-color)' }} />
+                              <img key={v.userId} src={v.avatarUrl} title={`${v.name} • ${new Date(v.at).toISOString()}`} alt={v.name} style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--border-color)' }} />
                             ) : (
-                              <div key={idx} className="avatar-dot" title={`${v.name} • ${new Date(v.at).toISOString()}`}></div>
+                              <div key={v.userId} className="avatar-dot" title={`${v.name} • ${new Date(v.at).toISOString()}`}></div>
                             )
                           ))}
                         </div>
@@ -513,6 +576,14 @@ function TrocaDeTurno() {
       
       {modalState.type === 'history' && (
         <HistoryModal
+          shift={modalState.shift}
+          onClose={() => setModalState({ type: null, shift: null })}
+          onView={recordView}
+        />
+      )}
+
+      {modalState.type === 'view' && (
+        <ViewShiftModal
           shift={modalState.shift}
           onClose={() => setModalState({ type: null, shift: null })}
           onView={recordView}

@@ -189,3 +189,41 @@
   background-color: var(--secondary-text-color);
   cursor: not-allowed;
 }
+
+/* ===== ESTILOS PARA USUÁRIOS DESABILITADOS ===== */
+
+.user-disabled {
+  opacity: 0.6;
+  background-color: var(--bg-tertiary-color);
+}
+
+.user-disabled .user-name-email .name,
+.user-disabled .user-name-email .email {
+  color: var(--secondary-text-color);
+}
+
+.user-status-disabled {
+  color: var(--error-color);
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-left: 8px;
+}
+
+/* Botões de ação para usuários desabilitados */
+.disable-button {
+  color: var(--warning-color);
+}
+
+.disable-button:hover {
+  background-color: var(--warning-color) !important;
+  color: white !important;
+}
+
+.delete-button {
+  color: var(--error-color);
+}
+
+.delete-button:hover {
+  background-color: var(--error-color) !important;
+  color: white !important;
+}

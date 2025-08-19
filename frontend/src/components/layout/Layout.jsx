@@ -183,6 +183,13 @@ function Layout() {
         <div className="page-content refined">
           <Outlet />
         </div>
+        
+        {/* Rodapé com direitos autorais */}
+        <footer className="footer">
+          <div className="footer-content">
+            <p>&copy; 2024 Desenvolvido por Igor Camanducci. Todos os direitos reservados.</p>
+          </div>
+        </footer>
       </main>
     </div>
   );

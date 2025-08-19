@@ -172,6 +172,11 @@
   color: var(--tertiary-text-color);
 }
 
+.shift-viewers {
+  font-size: var(--font-size-xs);
+  color: var(--tertiary-text-color);
+}
+
 .shift-actions {
   display: flex;
   gap: var(--spacing-sm);

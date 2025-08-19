@@ -13,7 +13,7 @@ const formatRole = (role) => {
 };
 
 // --- Componente para o Menu de Ações com Portal ---
-const ActionsMenu = ({ user, position, onClose, onEdit, onResetPassword }) => {
+const ActionsMenu = ({ user, position, onClose, onEdit, onResetPassword, onDisable, onDelete }) => {
   const menuRef = useRef();
 
   useEffect(() => {
@@ -34,6 +34,14 @@ const ActionsMenu = ({ user, position, onClose, onEdit, onResetPassword }) => {
     >
       <button onClick={() => onEdit(user)}>Editar</button>
       <button onClick={() => onResetPassword(user)}>Resetar Senha</button>
+      {user.email !== 'igor@admin.com' && (
+        <>
+          <button onClick={() => onDisable(user)} className="disable-button">
+            {user.disabled ? 'Habilitar' : 'Desabilitar'}
+          </button>
+          <button onClick={() => onDelete(user)} className="delete-button">Deletar</button>
+        </>
+      )}
     </div>,
     document.body
   );
@@ -215,6 +223,57 @@ function Usuarios() {
       toast.error('Erro: ' + error.message, { id: toastId });
     }
   };
+
+  const handleDisableUser = async (user) => {
+    const action = user.disabled ? 'habilitar' : 'desabilitar';
+    if (!window.confirm(`Tem certeza que deseja ${action} o usuário ${user.email}?`)) {
+      return;
+    }
+
+    const toastId = toast.loading(`${action === 'desabilitar' ? 'Desabilitando' : 'Habilitando'} usuário...`);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ disabled: !user.disabled })
+        .eq('id', user.id);
+      
+      if (error) throw error;
+      
+      toast.success(`Usuário ${action === 'desabilitar' ? 'desabilitado' : 'habilitado'} com sucesso!`, { id: toastId });
+      fetchUsers();
+    } catch (error) {
+      toast.error(`Erro ao ${action} usuário: ` + error.message, { id: toastId });
+    }
+  };
+
+  const handleDeleteUser = async (user) => {
+    if (!window.confirm(`ATENÇÃO: Tem certeza que deseja DELETAR permanentemente o usuário ${user.email}?\n\nEsta ação não pode ser desfeita!`)) {
+      return;
+    }
+
+    const toastId = toast.loading('Deletando usuário...');
+    try {
+      // Primeiro deletar o perfil
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', user.id);
+      
+      if (profileError) throw profileError;
+
+      // Depois deletar o usuário do auth
+      const { error: authError } = await supabase.auth.admin.deleteUser(user.id);
+      if (authError) {
+        console.warn('Erro ao deletar usuário do auth:', authError);
+        // Continua mesmo se falhar no auth, pois o perfil foi deletado
+      }
+      
+      toast.success('Usuário deletado com sucesso!', { id: toastId });
+      fetchUsers();
+    } catch (error) {
+      toast.error('Erro ao deletar usuário: ' + error.message, { id: toastId });
+    }
+  };
   
   const handleMenuClick = (user, event) => {
     event.stopPropagation();
@@ -249,29 +308,32 @@ function Usuarios() {
             </tr>
           </thead>
           <tbody>
-            {users.map(user => (
-              <tr key={user.id}>
-                <td>
-                  <div className="user-info">
-                    {user.avatar_url ? (
-                      <img src={user.avatar_url} alt={user.full_name} className="user-avatar" />
-                    ) : (
-                      <FaUserCircle className="user-avatar-placeholder" />
-                    )}
-                    <div className="user-name-email">
-                      <span className="name">{user.full_name || 'Usuário sem nome'}</span>
-                      <span className="email">{user.email}</span>
+            {users
+              .filter(user => user.email !== 'igor@admin.com')
+              .map(user => (
+                <tr key={user.id} className={user.disabled ? 'user-disabled' : ''}>
+                  <td>
+                    <div className="user-info">
+                      {user.avatar_url ? (
+                        <img src={user.avatar_url} alt={user.full_name} className="user-avatar" />
+                      ) : (
+                        <FaUserCircle className="user-avatar-placeholder" />
+                      )}
+                      <div className="user-name-email">
+                        <span className="name">{user.full_name || 'Usuário sem nome'}</span>
+                        <span className="email">{user.email}</span>
+                        {user.disabled && <span className="user-status-disabled">(Desabilitado)</span>}
+                      </div>
                     </div>
-                  </div>
-                </td>
-                <td>{formatRole(user.role)}</td>
-                <td className="actions-cell">
-                  <button className="actions-button" onClick={(e) => handleMenuClick(user, e)}>
-                    <HiDotsVertical size={20} />
-                  </button>
-                </td>
-              </tr>
-            ))}
+                  </td>
+                  <td>{formatRole(user.role)}</td>
+                  <td className="actions-cell">
+                    <button className="actions-button" onClick={(e) => handleMenuClick(user, e)}>
+                      <HiDotsVertical size={20} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
           </tbody>
         </table>
       </div>
@@ -289,6 +351,8 @@ function Usuarios() {
             handleResetPassword(userToReset);
             setMenuState({ user: null, position: null });
           }}
+          onDisable={handleDisableUser}
+          onDelete={handleDeleteUser}
         />
       )}
 

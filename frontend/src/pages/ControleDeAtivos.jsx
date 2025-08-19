@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { supabase } from '../lib/supabaseClient';
 import { Link } from 'react-router-dom';
-import { FaPlus, FaWrench, FaBoxOpen } from 'react-icons/fa';
+import { FaPlus, FaWrench, FaBoxOpen, FaEdit, FaTrash, FaArchive } from 'react-icons/fa';
 import { HiDotsVertical } from 'react-icons/hi';
 import toast from 'react-hot-toast';
 import './ControleDeAtivos.css';
@@ -31,11 +31,12 @@ const ActionsMenu = ({ asset, position, onClose, onEdit, onDelete, onDecommissio
 };
 
 // --- Modal para Adicionar/Editar Ativo ---
-const AssetModal = ({ onClose, onSave, existingAsset, categories, fieldsConfig }) => {
+const AssetModal = ({ onClose, onSave, existingAsset, categories, fieldsConfig = {} }) => {
   const [asset, setAsset] = useState(
     existingAsset || {
       serial_number: '',
       category: categories[0]?.name || '', 
+      status: 'Em estoque',
       metadata: {}
     }
   );
@@ -89,6 +90,14 @@ const AssetModal = ({ onClose, onSave, existingAsset, categories, fieldsConfig }
             />
           </div>
           
+          <div className="form-group">
+            <label>Status *</label>
+            <select name="status" value={asset.status} onChange={handleChange} required>
+              <option value="Em estoque">Em estoque</option>
+              <option value="Em uso">Em uso</option>
+            </select>
+          </div>
+          
           {customFields.map(field => (
             <div className="form-group" key={field.id}>
               <label>{field.field_label}</label>
@@ -123,9 +132,16 @@ const DecommissionModal = ({ asset, onClose, onDecommission }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
-        const success = await onDecommission(asset.id, reason, decommissionDate);
-        setLoading(false);
-        if(success) onClose();
+        try {
+            const success = await onDecommission(asset.id, reason, decommissionDate);
+            if (success) {
+                onClose();
+            }
+        } catch (err) {
+            console.error('Erro no modal de baixa:', err);
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -260,6 +276,7 @@ function ControleDeAtivos() {
       const dataToSave = {
         category: assetData.category,
         serial_number: assetData.serial_number.trim(),
+        status: assetData.status,
         metadata: assetData.metadata || {}
       };
 
@@ -268,16 +285,17 @@ function ControleDeAtivos() {
         dataToSave.id = assetData.id;
       }
 
-      const { error } = await supabase.from('ativos')[isEditing ? 'update' : 'insert'](dataToSave);
-      if (error) {
-        // Verificar se é erro de número de série duplicado
-        if (error.message.includes('serial_number') || 
-            error.message.includes('série') || 
-            error.message.includes('already exists') ||
-            error.message.includes('duplicate key')) {
-          throw new Error('Este número de série já está em uso por outro ativo ativo.');
-        }
-        throw error;
+      if (isEditing) {
+        const { error } = await supabase
+          .from('ativos')
+          .update(dataToSave)
+          .eq('id', assetData.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('ativos')
+          .insert(dataToSave);
+        if (error) throw error;
       }
       toast.success(isEditing ? 'Ativo atualizado!' : 'Ativo criado!', { id: toastId });
       fetchInitialData();
@@ -310,14 +328,16 @@ function ControleDeAtivos() {
         .update({
           status: 'Descartado',
           decommission_date: decommissionDate,
-          decommission_reason: reason
+          decommission_reason: reason,
+          performed_by: (await supabase.auth.getUser()).data.user?.id
         })
         .eq('id', assetId);
 
       if (error) throw error;
       
       toast.success('Baixa registrada com sucesso!', { id: toastId });
-      fetchInitialData();
+      // Recarregar dados e fechar modal
+      await fetchInitialData();
       return true;
     } catch (error) {
       toast.error('Erro ao dar baixa: ' + error.message);
@@ -388,10 +408,12 @@ function ControleDeAtivos() {
 
   const filteredAssets = useMemo(() => {
     return assets.filter(asset => 
-      (asset.category === activeTab) &&
+      (activeTab === null || asset.category === activeTab) &&
       (searchTerm.trim() === '' || 
         // Buscar no número de série
         (asset.serial_number && asset.serial_number.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        // Buscar no status
+        (asset.status && asset.status.toLowerCase().includes(searchTerm.toLowerCase())) ||
         // Buscar nos campos configurados
         Object.values(asset.metadata || {}).some(value => 
           value && value.toString().toLowerCase().includes(searchTerm.toLowerCase())
@@ -547,7 +569,7 @@ function ControleDeAtivos() {
                     onClick={() => setModalState({ type: 'decommission', asset: asset })}
                     title="Dar Baixa"
                   >
-                    <FaTrash />
+                    <FaArchive />
                   </button>
                 </div>
               </div>
@@ -556,7 +578,7 @@ function ControleDeAtivos() {
         ) : (
           <div className="empty-state">
             <div className="empty-icon">
-                              <FaBoxOpen />
+              <FaBoxOpen />
             </div>
             <h3>Nenhum ativo encontrado</h3>
             <p>
@@ -581,6 +603,7 @@ function ControleDeAtivos() {
           onClose={() => setModalState({ type: null, asset: null })}
           onSave={handleSaveAsset}
           categories={categories}
+          fieldsConfig={fieldsConfig}
         />
       )}
       
@@ -590,6 +613,7 @@ function ControleDeAtivos() {
           onSave={handleSaveAsset}
           existingAsset={modalState.asset}
           categories={categories}
+          fieldsConfig={fieldsConfig}
         />
       )}
       
@@ -601,13 +625,13 @@ function ControleDeAtivos() {
         />
       )}
       
-      {modalState.type === 'decommission' && (
-        <DecommissionModal
-          onClose={() => setModalState({ type: null, asset: null })}
-          onSave={handleDecommissionAsset}
-          asset={modalState.asset}
-        />
-      )}
+             {modalState.type === 'decommission' && (
+         <DecommissionModal
+           onClose={() => setModalState({ type: null, asset: null })}
+           onDecommission={handleDecommissionAsset}
+           asset={modalState.asset}
+         />
+       )}
     </div>
   );
 }

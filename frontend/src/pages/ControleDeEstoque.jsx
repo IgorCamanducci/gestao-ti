@@ -194,55 +194,327 @@ const EditAddressModal = ({ address, onClose, onSave, onDelete }) => {
   );
 };
 
-// --- Menu de Configurações ---
-const SettingsMenu = ({ position, onClose, onAddRack, onAddLevel, onAddAddress, onRemoveLevel, onRemoveAddress, activeRack, racks }) => {
-  const menuRef = useRef();
-  const currentRack = racks.find(r => r.id === activeRack);
+// --- Modal de Gerenciamento de Estrutura ---
+const StructureManagerModal = ({ onClose, activeRack, racks, refresh }) => {
+  const { currentRack, levels, positionsByLevel, maxLevel } = useMemo(() => {
+    const rack = racks.find(r => r.id === activeRack) || null;
+    const levelSet = new Set((rack?.enderecos || []).map(e => e.nivel));
+    const levels = Array.from(levelSet).sort((a,b)=>a-b);
+    const posMap = {};
+    (rack?.enderecos || []).forEach(e => {
+      if (!posMap[e.nivel]) posMap[e.nivel] = new Set();
+      posMap[e.nivel].add(e.name);
+    });
+    const pb = {};
+    Object.keys(posMap).forEach(k => pb[k] = Array.from(posMap[k]).sort());
+    const maxLevel = levels.length ? levels[levels.length-1] : 0;
+    return { currentRack: rack, levels, positionsByLevel: pb, maxLevel };
+  }, [activeRack, racks]);
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) onClose();
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [onClose]);
+  const [creatingRack, setCreatingRack] = useState({ name: '', niveis: 1, enderecos: 1 });
+  const [addLevelCount, setAddLevelCount] = useState(1);
+  const [createPositions, setCreatePositions] = useState({ level: '', positions: '' });
+  const [removeLevels, setRemoveLevels] = useState('');
+  const [removePositions, setRemovePositions] = useState({ level: '', list: [] });
+  const [busy, setBusy] = useState(false);
+  const [rackToRemove, setRackToRemove] = useState(activeRack || (racks[0]?.id || ''));
 
-  return ReactDOM.createPortal(
-    <div ref={menuRef} className="settings-menu" style={{ top: position.top, left: position.left }}>
-      <div className="menu-section">
-        <div className="menu-header">Gerenciar Rack</div>
-        <button onClick={onAddRack}>
-          <FaPlus />
-          Adicionar Novo Rack
-        </button>
-        
-        {currentRack && (
-          <>
-            <div className="rack-info">
-              <strong>{currentRack.name}</strong>
-              <span>{currentRack.niveis} níveis × {currentRack.enderecos_por_nivel} endereços</span>
+  const createRack = async () => {
+    setBusy(true);
+    const toastId = toast.loading('Criando rack...');
+    try {
+      const { data: rack, error: rackError } = await supabase
+        .from('estoque_racks')
+        .insert([{ name: creatingRack.name, niveis: creatingRack.niveis, enderecos_por_nivel: creatingRack.enderecos }])
+        .select()
+        .single();
+      if (rackError) throw rackError;
+      const { error: genErr } = await supabase.rpc('generate_rack_addresses', {
+        p_rack_id: rack.id,
+        p_niveis: creatingRack.niveis,
+        p_enderecos_por_nivel: creatingRack.enderecos,
+      });
+      if (genErr) throw genErr;
+      toast.success('Rack criado!', { id: toastId });
+      refresh();
+      onClose();
+    } catch (e) {
+      toast.error('Erro: ' + e.message, { id: toastId });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const addLevels = async () => {
+    if (!currentRack) return;
+    setBusy(true);
+    const toastId = toast.loading('Criando níveis...');
+    try {
+      const list = Array.from({ length: Math.max(0, parseInt(addLevelCount) || 0) }, (_, i) => maxLevel + 1 + i);
+      const { error } = await supabase.rpc('rack_add_levels', { p_rack_id: currentRack.id, p_levels: list });
+      if (error) throw error;
+      toast.success('Níveis criados!', { id: toastId });
+      refresh();
+      onClose();
+    } catch (e) {
+      toast.error('Erro: ' + e.message, { id: toastId });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const addPositions = async () => {
+    if (!currentRack) return;
+    const lvl = parseInt(createPositions.level);
+    const pos = createPositions.positions.split(',').map(s=>s.trim()).filter(Boolean);
+    if (!lvl || pos.length === 0) { toast.error('Selecione nível e posições.'); return; }
+    setBusy(true);
+    const toastId = toast.loading('Criando posições...');
+    try {
+      const { error } = await supabase.rpc('rack_add_positions', { p_rack_id: currentRack.id, p_level: lvl, p_positions: pos });
+      if (error) throw error;
+      toast.success('Posições criadas!', { id: toastId });
+      refresh();
+      onClose();
+    } catch (e) {
+      toast.error('Erro: ' + e.message, { id: toastId });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const removeLevelsAction = async () => {
+    if (!currentRack) return;
+    const list = removeLevels.split(',').map(s=>parseInt(s.trim())).filter(n=>!isNaN(n));
+    if (list.length === 0) { toast.error('Informe níveis para remover.'); return; }
+    setBusy(true);
+    const toastId = toast.loading('Removendo níveis...');
+    try {
+      const { error } = await supabase.rpc('rack_remove_levels', { p_rack_id: currentRack.id, p_levels: list });
+      if (error) throw error;
+      toast.success('Níveis removidos!', { id: toastId });
+      refresh();
+      onClose();
+    } catch (e) {
+      toast.error('Erro: ' + e.message, { id: toastId });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const removePositionsAction = async () => {
+    if (!currentRack) return;
+    const lvl = parseInt(removePositions.level);
+    const pos = removePositions.list;
+    if (!lvl || pos.length === 0) { toast.error('Selecione nível e posições.'); return; }
+    setBusy(true);
+    const toastId = toast.loading('Removendo posições...');
+    try {
+      const { error } = await supabase.rpc('rack_remove_positions', { p_rack_id: currentRack.id, p_level: lvl, p_positions: pos });
+      if (error) throw error;
+      toast.success('Posições removidas!', { id: toastId });
+      refresh();
+      onClose();
+    } catch (e) {
+      toast.error('Erro: ' + e.message, { id: toastId });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const removeRackAction = async () => {
+    const rackId = rackToRemove;
+    if (!rackId) { toast.error('Selecione um rack.'); return; }
+    if (!window.confirm('Tem certeza que deseja remover este rack e todos os seus endereços? Esta ação não pode ser desfeita.')) return;
+    setBusy(true);
+    const toastId = toast.loading('Removendo rack...');
+    try {
+      const { error: delAddrErr } = await supabase.from('estoque_enderecos').delete().eq('rack_id', rackId);
+      if (delAddrErr) throw delAddrErr;
+      const { error: delRackErr } = await supabase.from('estoque_racks').delete().eq('id', rackId);
+      if (delRackErr) throw delRackErr;
+      toast.success('Rack removido!', { id: toastId });
+      await refresh();
+      onClose();
+    } catch (e) {
+      toast.error('Erro ao remover rack: ' + e.message, { id: toastId });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={e=>e.stopPropagation()}>
+        <h2>Gerenciar Estrutura</h2>
+
+        <div className="form-group structure-group">
+          <h3>Adicionar Rack</h3>
+          <p className="help-text">Informe nome, quantidade de níveis e o número de posições por nível.</p>
+          <div className="add-item-form">
+            <div className="field">
+              <label>Nome do Rack</label>
+              <input type="text" value={creatingRack.name} onChange={e=>setCreatingRack(v=>({ ...v, name: e.target.value }))} />
             </div>
-            <button onClick={onAddLevel}>
-              <FaPlus />
-              Adicionar Nível
+            <div className="field">
+              <label>Níveis</label>
+              <input type="number" min="1" value={creatingRack.niveis} onChange={e=>setCreatingRack(v=>({ ...v, niveis: parseInt(e.target.value)||1 }))} />
+            </div>
+            <div className="field">
+              <label>Posições por nível</label>
+              <input type="number" min="1" value={creatingRack.enderecos} onChange={e=>setCreatingRack(v=>({ ...v, enderecos: parseInt(e.target.value)||1 }))} />
+            </div>
+            <div className="field field-action">
+              <button className="form-button" onClick={createRack} disabled={busy}>Criar</button>
+            </div>
+          </div>
+        </div>
+
+        <hr className="modal-divider" />
+
+        <div className="form-group structure-group">
+          <h3>Adicionar Níveis ao Rack Atual</h3>
+          <p className="help-text">Quantidade de níveis a adicionar (serão criados após o último nível existente).</p>
+          <div className="add-item-form">
+            <div className="field">
+              <label>Qtd. de níveis</label>
+              <input type="number" min="1" value={addLevelCount} onChange={e=>setAddLevelCount(parseInt(e.target.value)||1)} />
+            </div>
+            <div className="field field-action">
+              <button className="form-button" onClick={addLevels} disabled={busy || !currentRack}>Adicionar</button>
+            </div>
+          </div>
+          {!currentRack && <p className="no-items">Selecione um rack nas abas acima.</p>}
+        </div>
+
+        <div className="form-group structure-group">
+          <h3>Adicionar Posições</h3>
+          <p className="help-text">Escolha o nível e informe as posições separadas por vírgula (ex.: A,B,C).</p>
+          <div className="add-item-form">
+            <div className="field">
+              <label>Nível</label>
+              <select value={createPositions.level} onChange={e=>setCreatePositions(v=>({ ...v, level: e.target.value }))}>
+                <option value="">Selecione…</option>
+                {levels.map(n=> <option key={n} value={n}>{n}</option>)}
+              </select>
+            </div>
+            <div className="field">
+              <label>Posições</label>
+              <input type="text" placeholder="A,B,C" value={createPositions.positions} onChange={e=>setCreatePositions(v=>({ ...v, positions: e.target.value }))} />
+            </div>
+            <div className="field field-action">
+              <button className="form-button" onClick={addPositions} disabled={busy || !currentRack}>Adicionar</button>
+            </div>
+          </div>
+        </div>
+
+        <hr className="modal-divider" />
+
+        <div className="form-group structure-group">
+          <h3>Remover Níveis</h3>
+          <p className="help-text">Informe os níveis separados por vírgula (ex.: 2,5).</p>
+          <div className="add-item-form">
+            <div className="field">
+              <label>Níveis</label>
+              <input type="text" placeholder="2,5" value={removeLevels} onChange={e=>setRemoveLevels(e.target.value)} />
+            </div>
+            <div className="field field-action">
+              <button className="form-button delete-button" onClick={removeLevelsAction} disabled={busy || !currentRack}>Remover</button>
+            </div>
+          </div>
+        </div>
+
+        <div className="form-group structure-group">
+          <h3>Remover Posições</h3>
+          <p className="help-text">Escolha o nível e selecione as posições a remover.</p>
+          <div className="add-item-form">
+            <div className="field">
+              <label>Nível</label>
+              <select value={removePositions.level} onChange={e=>setRemovePositions(v=>({ ...v, level: e.target.value, list: [] }))}>
+                <option value="">Selecione…</option>
+                {levels.map(n=> <option key={n} value={n}>{n}</option>)}
+              </select>
+            </div>
+            <div className="field">
+              <label>Posições</label>
+              {(() => {
+                const available = positionsByLevel[removePositions.level] || [];
+                const allSelected = available.length > 0 && removePositions.list.length === available.length;
+                if (available.length === 0) {
+                  return <span className="no-items">Nenhuma posição neste nível</span>;
+                }
+                return (
+                  <div className="checks">
+                    <div className="checks-header">
+                      <label className="check-all">
+                        <input
+                          type="checkbox"
+                          checked={allSelected}
+                          onChange={(e) => setRemovePositions(v => ({ ...v, list: e.target.checked ? available : [] }))}
+                        />
+                        Selecionar todas
+                      </label>
+                      <span className="checks-count">{removePositions.list.length} selecionada(s)</span>
+                    </div>
+                    <div className="checks-grid">
+                      {available.map(p => (
+                        <label key={p} className="check-item">
+                          <input
+                            type="checkbox"
+                            checked={removePositions.list.includes(p)}
+                            onChange={(e) => setRemovePositions(v => ({
+                              ...v,
+                              list: e.target.checked
+                                ? [...v.list, p]
+                                : v.list.filter(x => x !== p)
+                            }))}
+                          />
+                          {p}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+            <div className="field field-action">
+              <button
+                className="form-button delete-button"
+                onClick={removePositionsAction}
+                disabled={busy || !currentRack || removePositions.list.length === 0}
+                title={removePositions.list.length > 0 ? `Remover ${removePositions.list.length} posição(ões)` : 'Selecione ao menos uma posição'}
+              >
+                {removePositions.list.length > 0 ? `Remover (${removePositions.list.length})` : 'Remover'}
             </button>
-            <button onClick={onAddAddress}>
-              <FaPlus />
-              Adicionar Endereço
-            </button>
-            <button onClick={onRemoveLevel} className="danger-action">
-              <FaTrash />
-              Remover Último Nível
-            </button>
-            <button onClick={onRemoveAddress} className="danger-action">
-              <FaTrash />
-              Remover Último Endereço
-            </button>
-          </>
-        )}
       </div>
-    </div>,
-    document.body
+          </div>
+        </div>
+
+        <hr className="modal-divider" />
+
+        <div className="form-group structure-group">
+          <h3>Remover Rack</h3>
+          <p className="help-text">Selecione um rack para removê-lo definitivamente.</p>
+          <div className="add-item-form">
+            <div className="field">
+              <label>Rack</label>
+              <select value={rackToRemove} onChange={e=>setRackToRemove(e.target.value)}>
+                {racks.map(r => (
+                  <option key={r.id} value={r.id}>{r.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="field field-action">
+              <button className="form-button delete-button" onClick={removeRackAction} disabled={busy || racks.length === 0}>Remover Rack</button>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display:'flex', justifyContent:'flex-end', marginTop:'12px' }}>
+          <button type="button" className="form-button" style={{ background: 'var(--secondary-text-color)' }} onClick={onClose}>Fechar</button>
+        </div>
+      </div>
+    </div>
   );
 };
 
@@ -254,7 +526,7 @@ function ControleDeEstoque() {
   const [searchAllRacks, setSearchAllRacks] = useState(false);
   const [loading, setLoading] = useState(true);
   const [modalState, setModalState] = useState({ type: null, data: null });
-  const [settingsMenu, setSettingsMenu] = useState({ show: false, position: null });
+  const [structureOpen, setStructureOpen] = useState(false);
 
   // Buscar dados iniciais
   const fetchRacks = async () => {
@@ -571,11 +843,7 @@ function ControleDeEstoque() {
           <button
             className="form-button"
             onClick={(e) => {
-              const rect = e.currentTarget.getBoundingClientRect();
-              setSettingsMenu({
-                show: true,
-                position: { top: rect.bottom + 5, left: rect.left }
-              });
+              setStructureOpen(true);
             }}
           >
             <FaCog />
@@ -703,32 +971,12 @@ function ControleDeEstoque() {
       )}
 
       {/* Menu de Configurações */}
-      {settingsMenu.show && (
-        <SettingsMenu
-          position={settingsMenu.position}
-          onClose={() => setSettingsMenu({ show: false, position: null })}
-          onAddRack={() => {
-            setModalState({ type: 'initial-config', data: null });
-            setSettingsMenu({ show: false, position: null });
-          }}
-          onAddLevel={() => {
-            handleAddLevel();
-            setSettingsMenu({ show: false, position: null });
-          }}
-          onAddAddress={() => {
-            handleAddAddress();
-            setSettingsMenu({ show: false, position: null });
-          }}
-          onRemoveLevel={() => {
-            handleRemoveLevel();
-            setSettingsMenu({ show: false, position: null });
-          }}
-          onRemoveAddress={() => {
-            handleRemoveAddress();
-            setSettingsMenu({ show: false, position: null });
-          }}
+      {structureOpen && (
+        <StructureManagerModal
+          onClose={() => setStructureOpen(false)}
           activeRack={activeRack}
           racks={racks}
+          refresh={fetchRacks}
         />
       )}
     </div>
