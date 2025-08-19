@@ -6,6 +6,7 @@ import {
   FaDesktop, FaWarehouse, FaWrench, FaChartLine, FaBell,
   FaCheckCircle, FaExclamationTriangle, FaClock, FaUserTie
 } from 'react-icons/fa';
+import { FaKey } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import './PaginaInicial.css';
 
@@ -173,13 +174,15 @@ function PaginaInicial() {
   }
 
   return (
-    <div className="dashboard-container">
-      <div className="dashboard-header">
+    <div className="historico-container">
+      <div className="assets-page-header">
         <div className="header-content">
-          <h1 className="dashboard-title">{greeting}, {profile?.full_name || 'Usuário'}!</h1>
-          <p className="dashboard-subtitle">{dateTimeFormatter.format(currentDateTime)}</p>
+          <h1>{greeting}, {profile?.full_name || 'Usuário'}! 🏠</h1>
+          <p style={{ color: 'var(--secondary-text-color)', margin: 0 }}>
+            {dateTimeFormatter.format(currentDateTime)}
+          </p>
         </div>
-        <div className="header-actions">
+        <div className="search-and-actions">
           <div className="system-health">
             {systemHealth.criticalTasks > 0 && (
               <div className="health-alert critical">
@@ -275,8 +278,8 @@ function PaginaInicial() {
                 <Link to="/folgas" className="quick-action-btn">
                   <FaCalendarAlt /> Gestão de Folgas
                 </Link>
-                <Link to="/ferias" className="quick-action-btn">
-                  <FaCalendarAlt /> Gestão de Férias
+                <Link to="/senhas" className="quick-action-btn">
+                  <FaKey /> Senhas
                 </Link>
               </div>
             </div>
@@ -419,14 +422,14 @@ function PaginaInicial() {
                 </h3>
               </div>
               <div className="section-content">
-                <p>Faça suas solicitações de folga e férias diretamente pelo sistema. Acompanhe o status das suas solicitações pendentes.</p>
+                <p>Faça suas solicitações de folga diretamente pelo sistema e gerencie as senhas de equipamentos.</p>
               </div>
               <div className="quick-actions">
                 <Link to="/folgas" className="quick-action-btn">
                   <FaCalendarAlt /> Solicitar Folga
                 </Link>
-                <Link to="/ferias" className="quick-action-btn">
-                  <FaCalendarAlt /> Solicitar Férias
+                <Link to="/senhas" className="quick-action-btn">
+                  <FaKey /> Senhas
                 </Link>
                 <Link to="/turno" className="quick-action-btn">
                   <FaExchangeAlt /> Trocar Turno

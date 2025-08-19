@@ -192,25 +192,29 @@ function GerenciarCategorias() {
   if (loading) return <div>Carregando...</div>;
 
   return (
-    <div className="manager-page">
-      <h1>Gerenciar Categorias de Ativos</h1>
-      <p>Crie e organize as "abas" e os "cabeçalhos" que aparecerão na página de Controle de Ativos.</p>
-      
-      <div className="add-category-section">
-        <form onSubmit={handleAddCategory} className="add-category-form">
-          <input 
-            type="text" 
-            className="form-group"
-            placeholder="Nome da nova aba (ex: Monitores)" 
-            value={newCategoryName}
-            onChange={(e) => setNewCategoryName(e.target.value)}
-          />
-          <button type="submit" className="form-button">
-            <FaPlus style={{ marginRight: '8px' }} />
-            Criar Nova Categoria
-          </button>
-        </form>
+    <div className="historico-container">
+      <div className="assets-page-header">
+        <h1>🏷️ Gerenciar Categorias de Ativos</h1>
+        <div className="search-and-actions">
+          <form onSubmit={handleAddCategory} className="add-category-form">
+            <input 
+              type="text" 
+              className="search-input"
+              placeholder="Nome da nova aba (ex: Monitores)" 
+              value={newCategoryName}
+              onChange={(e) => setNewCategoryName(e.target.value)}
+            />
+            <button type="submit" className="form-button">
+              <FaPlus style={{ marginRight: '8px' }} />
+              Criar Nova Categoria
+            </button>
+          </form>
+        </div>
       </div>
+      
+      <p style={{ marginBottom: 'var(--spacing-lg)', color: 'var(--secondary-text-color)' }}>
+        Crie e organize as "abas" e os "cabeçalhos" que aparecerão na página de Controle de Ativos.
+      </p>
 
       <div className="categories-container">
         {categories.map(cat => (

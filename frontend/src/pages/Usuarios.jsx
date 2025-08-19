@@ -229,13 +229,15 @@ function Usuarios() {
   if (error) return <div style={{ color: 'red' }}>{error}</div>;
 
   return (
-    <div className="user-list-page">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-        <h1>Gestão de Usuários</h1>
-        <button className="form-button" onClick={() => setIsAddModalOpen(true)}>
-          <FaPlus style={{ marginRight: '8px' }} />
-          Novo Usuário
-        </button>
+    <div className="historico-container">
+      <div className="assets-page-header">
+        <h1>👥 Gestão de Usuários</h1>
+        <div className="search-and-actions">
+          <button className="form-button" onClick={() => setIsAddModalOpen(true)}>
+            <FaPlus style={{ marginRight: '8px' }} />
+            Novo Usuário
+          </button>
+        </div>
       </div>
       <div className="user-table-container">
         <table className="user-table">

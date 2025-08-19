@@ -11,7 +11,7 @@ import RecuperarSenha from './pages/RecuperarSenha.jsx';
 import UpdatePassword from './pages/UpdatePassword.jsx';
 import PaginaInicial from './pages/PaginaInicial.jsx';
 import GestaoDeFolgas from './pages/GestaoDeFolgas.jsx';
-import GestaoDeFerias from './pages/GestaoDeFerias.jsx';
+import Senhas from './pages/Senhas.jsx';
 import Inventario from './pages/Inventario.jsx';
 import ControleDeAtivos from './pages/ControleDeAtivos.jsx';
 import ControleDeEstoque from './pages/ControleDeEstoque.jsx';
@@ -31,7 +31,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <PaginaInicial /> },
       { path: 'folgas', element: <GestaoDeFolgas /> },
-      { path: 'ferias', element: <GestaoDeFerias /> },
+      { path: 'senhas', element: <Senhas /> },
       { path: 'inventario', element: <Inventario /> },
       { path: 'ativos', element: <ControleDeAtivos /> },
       { path: 'manutencao', element: <AtivosEmManutencao /> },

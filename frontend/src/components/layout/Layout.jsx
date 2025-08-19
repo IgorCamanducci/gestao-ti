@@ -5,7 +5,7 @@ import { useTheme } from '../../context/ThemeContext';
 import {
   FaUserCircle, FaBars, FaHome, FaCalendarAlt, FaBoxOpen, FaUsers,
   FaCogs, FaSignOutAlt, FaTasks, FaExchangeAlt, FaWarehouse, FaDesktop,
-  FaHistory, FaSun, FaMoon, FaWrench
+  FaHistory, FaSun, FaMoon, FaWrench, FaKey
 } from 'react-icons/fa';
 import './layout.css';
 
@@ -39,16 +39,16 @@ function Layout() {
   // Ordem e agrupamento conforme solicitado
   const menuItems = [
     { path: '/', name: 'Página Inicial', icon: <FaHome /> },
-    { path: '/folgas', name: 'Gestão de Folgas', icon: <FaCalendarAlt /> },
-    { path: '/ferias', name: 'Gestão de Férias', icon: <FaCalendarAlt /> },
-    { path: '/inventario', name: 'Inventário', icon: <FaBoxOpen /> },
-    { path: '/ativos', name: 'Controle de Ativos', icon: <FaDesktop /> },
-    { path: '/manutencao', name: 'Ativos em Manutenção', icon: <FaWrench /> },
-    { path: '/estoque', name: 'Controle de Estoque', icon: <FaWarehouse /> },
-    { path: '/turno', name: 'Troca de Turno', icon: <FaExchangeAlt /> },
     { path: '/pendencias', name: 'Pendências', icon: <FaTasks /> },
-    profile?.role === 'coordenador' && { path: '/usuarios', name: 'Usuários', icon: <FaUsers /> },
+    { path: '/turno', name: 'Troca de Turno', icon: <FaExchangeAlt /> },
+    { path: '/inventario', name: 'Controle de Inventário', icon: <FaBoxOpen /> },
+    { path: '/estoque', name: 'Controle de Estoque', icon: <FaWarehouse /> },
+    { path: '/ativos', name: 'Inventário', icon: <FaDesktop /> },
+    { path: '/manutencao', name: 'Manutenção', icon: <FaWrench /> },
     { path: '/historico', name: 'Histórico', icon: <FaHistory /> },
+    { path: '/folgas', name: 'Gestão de Folgas', icon: <FaCalendarAlt /> },
+    { path: '/senhas', name: 'Senhas', icon: <FaKey /> },
+    profile?.role === 'coordenador' && { path: '/usuarios', name: 'Usuários', icon: <FaUsers /> },
   ].filter(Boolean);
 
   const handleSidebarClose = () => {
@@ -145,12 +145,15 @@ function Layout() {
               title={isDark ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
             >
               {isDark ? <FaSun /> : <FaMoon />}
+              <span className="nav-text">Tema</span>
             </button>
             <NavLink to="/configuracoes" className="sidebar-action-btn" title="Configurações">
               <FaCogs />
+              <span className="nav-text">Configurações</span>
             </NavLink>
             <NavLink to="/logout" className="sidebar-action-btn logout" title="Sair">
               <FaSignOutAlt />
+              <span className="nav-text">Sair</span>
             </NavLink>
           </div>
           <div className="user-avatar refined">

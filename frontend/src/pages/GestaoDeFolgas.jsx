@@ -181,69 +181,154 @@ function GestaoDeFolgas() {
   if (loading) return <div>Carregando...</div>;
 
   return (
-    <div className="folgas-page">
-      <div className="folgas-header">
-        <h1>Gestão de Folgas</h1>
-        <button className="form-button" onClick={() => { setEditingRequest(null); setIsModalOpen(true); }}>
-          <FaPlus style={{ marginRight: '8px' }} />
-          Pedir Folga
+    <div className="historico-container">
+      <div className="assets-page-header">
+        <h1>📅 Gestão de Folgas</h1>
+        <div className="search-and-actions">
+          <button className="form-button" onClick={() => setIsModalOpen(true)}>
+            <FaPlus style={{ marginRight: '8px' }} />
+            Solicitar Folga
+          </button>
+        </div>
+      </div>
+
+      <div className="asset-tabs">
+        <button 
+          className={activeFilter === 'pendente' ? 'active' : ''} 
+          onClick={() => setActiveFilter('pendente')}
+        >
+          Pendentes
+        </button>
+        <button 
+          className={activeFilter === 'aprovado' ? 'active' : ''} 
+          onClick={() => setActiveFilter('aprovado')}
+        >
+          Aprovadas
+        </button>
+        <button 
+          className={activeFilter === 'rejeitado' ? 'active' : ''} 
+          onClick={() => setActiveFilter('rejeitado')}
+        >
+          Rejeitadas
+        </button>
+        <button 
+          className={activeFilter === 'todos' ? 'active' : ''} 
+          onClick={() => setActiveFilter('todos')}
+        >
+          Todos
         </button>
       </div>
-      
-      <div className="filter-buttons">
-        <button onClick={() => setActiveFilter('pendente')} className={activeFilter === 'pendente' ? 'active' : ''}>Pendentes</button>
-        <button onClick={() => setActiveFilter('aprovado')} className={activeFilter === 'aprovado' ? 'active' : ''}>Aprovados</button>
-        <button onClick={() => setActiveFilter('rejeitado')} className={activeFilter === 'rejeitado' ? 'active' : ''}>Rejeitados</button>
-        <button onClick={() => setActiveFilter('todos')} className={activeFilter === 'todos' ? 'active' : ''}>Todos</button>
-      </div>
 
-      <div className="folgas-list">
-        {!loading && folgas.length === 0 && <p>Nenhum pedido de folga encontrado para este filtro.</p>}
-        {!loading && folgas.map(folga => {
-          const isOwner = folga.user_id === user.id;
-          const isCoordinator = profile?.role === 'coordenador';
-          const canManage = (isOwner && folga.status === 'pendente') || isCoordinator;
+      <div className="asset-table-container">
+        {!loading && folgas.length === 0 ? (
+          <div className="empty-state">
+            <span>Nenhum pedido de folga encontrado para este filtro.</span>
+          </div>
+        ) : (
+          <table className="asset-table">
+            <thead>
+              <tr>
+                <th>Usuário</th>
+                <th>Período</th>
+                <th>Feriado Trabalhado</th>
+                <th>Motivo</th>
+                <th>Status</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {!loading && folgas.map(folga => {
+                const isOwner = folga.user_id === user.id;
+                const isCoordinator = profile?.role === 'coordenador';
+                const canManage = (isOwner && folga.status === 'pendente') || isCoordinator;
 
-          return (
-            <div key={folga.id} className="folga-card">
-              <div className="folga-card-header">
-                <div style={{display: 'flex', alignItems: 'center', gap: '16px'}}>
-                  {isCoordinator && (
-                    <div className="folga-user-info">
-                      {folga.profiles.avatar_url ? (
-                        <img src={folga.profiles.avatar_url} alt="Avatar" className="folga-avatar" />
-                      ) : (
-                        <FaUserCircle className="folga-avatar-placeholder" />
+                return (
+                  <tr 
+                    key={folga.id} 
+                    className="folga-row"
+                    onClick={() => {
+                      if (canManage) {
+                        setEditingRequest(folga);
+                        setIsModalOpen(true);
+                      }
+                    }}
+                    style={{ cursor: canManage ? 'pointer' : 'default' }}
+                    title={canManage ? 'Clique para editar' : ''}
+                  >
+                    <td className="asset-name">
+                      <div className="asset-info">
+                        {isCoordinator && (
+                          <>
+                            {folga.profiles.avatar_url ? (
+                              <img src={folga.profiles.avatar_url} alt="Avatar" className="folga-avatar" />
+                            ) : (
+                              <FaUserCircle className="folga-avatar-placeholder" />
+                            )}
+                            <span>{folga.profiles.full_name || 'Usuário'}</span>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                    <td>
+                      <div><strong>Início:</strong> {formatDate(folga.start_date)}</div>
+                      <div><strong>Fim:</strong> {formatDate(folga.start_date)}</div>
+                    </td>
+                    <td>{folga.worked_holiday_date ? formatDate(folga.worked_holiday_date) : '-'}</td>
+                    <td>{folga.reason || 'Nenhum.'}</td>
+                    <td>
+                      <span className={`status-badge status-${folga.status}`}>{folga.status}</span>
+                    </td>
+                    <td className="actions-cell">
+                      {canManage && (
+                        <button 
+                          className="actions-button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleMenuClick(folga, e);
+                          }}
+                          title="Ações"
+                        >
+                          <HiDotsVertical />
+                        </button>
                       )}
-                      <span>{folga.profiles.full_name || 'Usuário'}</span>
-                    </div>
-                  )}
-                  <span className={`status-badge status-${folga.status}`}>{folga.status}</span>
-                </div>
-                
-                {canManage && (
-                  <button className="card-actions-button" onClick={(e) => handleMenuClick(folga, e)}>
-                    <HiDotsVertical size={20} />
-                  </button>
-                )}
-              </div>
-              <div className="folga-card-body">
-                <div><strong>Início:</strong><span>{formatDate(folga.start_date)}</span></div>
-                <div><strong>Fim:</strong><span>{formatDate(folga.end_date)}</span></div>
-                {folga.worked_holiday_date && (
-                   <div><strong>Feriado Trabalhado:</strong><span>{formatDate(folga.worked_holiday_date)}</span></div>
-                )}
-                <div style={{ gridColumn: '1 / -1' }}><strong>Motivo:</strong><span>{folga.reason || 'Nenhum.'}</span></div>
-              </div>
-              {isCoordinator && folga.status === 'pendente' && (
-                <div className="folga-card-footer">
-                  <button className="action-button reject-button" onClick={() => handleUpdateStatus(folga.id, 'rejeitado')}>Rejeitar</button>
-                  <button className="action-button approve-button" onClick={() => handleUpdateStatus(folga.id, 'aprovado')}>Aprovar</button>
-                </div>
-              )}
-            </div>
-          )
-        })}
+                      {isCoordinator && folga.status === 'pendente' && (
+                        <div style={{ display: 'flex', gap: 'var(--spacing-xs)', marginTop: 'var(--spacing-xs)' }}>
+                          <button 
+                            className="form-button" 
+                            style={{ 
+                              background: 'var(--error-color)', 
+                              padding: 'var(--spacing-xs) var(--spacing-sm)',
+                              fontSize: 'var(--font-size-xs)'
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleUpdateStatus(folga.id, 'rejeitado');
+                            }}
+                          >
+                            Rejeitar
+                          </button>
+                          <button className="form-button" 
+                            style={{ 
+                              background: 'var(--success-color)', 
+                              padding: 'var(--spacing-sm)',
+                              fontSize: 'var(--font-size-xs)'
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleUpdateStatus(folga.id, 'aprovado');
+                            }}
+                          >
+                            Aprovar
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        )}
       </div>
 
       {menuState.request && (

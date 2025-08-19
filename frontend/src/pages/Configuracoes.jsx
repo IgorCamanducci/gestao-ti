@@ -116,8 +116,10 @@ function Configuracoes() {
   };
 
   return (
-    <div className="settings-page">
-      <h1>Configurações</h1>
+    <div className="historico-container">
+      <div className="assets-page-header">
+        <h1>⚙️ Configurações</h1>
+      </div>
 
       <section className="settings-section">
         <h2>Perfil</h2>
@@ -174,7 +176,7 @@ function Configuracoes() {
       
       <section className="settings-section">
         <h2>Gerenciamento do Sistema</h2>
-        <Link to="/configuracoes/categorias-ativos" className="form-button">
+        <Link to="/configuracoes/categorias-ativos" className="form-button" style={{ textDecoration: 'none', display: 'inline-block' }}>
             Gerenciar Categorias de Ativos
         </Link>
       </section>

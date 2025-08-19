@@ -1,21 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
-import { FaPlus, FaEdit, FaArchive, FaHistory, FaClock, FaUser, FaCalendarAlt } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaArchive, FaHistory, FaClock, FaCalendarAlt, FaEye, FaEyeSlash } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 import './TrocaDeTurno.css';
 
 // --- Modal para Adicionar/Editar Troca de Turno ---
-const ShiftChangeModal = ({ onClose, onSave, existingShift, profiles }) => {
+const ShiftChangeModal = ({ onClose, onSave, existingShift }) => {
   const [shift, setShift] = useState(
     existingShift || {
-      title: '',
       description: '',
       shift_date: new Date().toISOString().split('T')[0],
       shift_time: '',
-      requester_id: null,
-      assignee_id: null,
-      status: 'Pendente'
+      status: 'Aprovado'
     }
   );
   const [loading, setLoading] = useState(false);
@@ -39,25 +36,14 @@ const ShiftChangeModal = ({ onClose, onSave, existingShift, profiles }) => {
         <h2>{existingShift ? 'Editar' : 'Nova'} Troca de Turno</h2>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Título *</label>
-            <input 
-              name="title" 
-              type="text" 
-              value={shift.title} 
-              onChange={handleChange} 
-              required 
-              placeholder="Ex: Troca de turno noturno"
-            />
-          </div>
-          
-          <div className="form-group">
-            <label>Descrição</label>
+            <label>Descrição da Troca *</label>
             <textarea 
               name="description" 
               rows="4" 
-              value={shift.description || ''} 
+              value={shift.description} 
               onChange={handleChange}
-              placeholder="Detalhes da troca de turno..."
+              placeholder="Descreva a troca de turno (ex: Trocar turno noturno por matutino, etc.)"
+              required
             />
           </div>
           
@@ -85,49 +71,7 @@ const ShiftChangeModal = ({ onClose, onSave, existingShift, profiles }) => {
             </div>
           </div>
           
-          <div className="form-row">
-            <div className="form-group">
-              <label>Solicitante</label>
-              <select 
-                name="requester_id" 
-                value={shift.requester_id || ''} 
-                onChange={handleChange}
-              >
-                <option value="">Selecione...</option>
-                {profiles.map(p => (
-                  <option key={p.id} value={p.id}>{p.full_name}</option>
-                ))}
-              </select>
-            </div>
-            
-            <div className="form-group">
-              <label>Responsável</label>
-              <select 
-                name="assignee_id" 
-                value={shift.assignee_id || ''} 
-                onChange={handleChange}
-              >
-                <option value="">Selecione...</option>
-                {profiles.map(p => (
-                  <option key={p.id} value={p.id}>{p.full_name}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-          
-          <div className="form-group">
-            <label>Status</label>
-            <select 
-              name="status" 
-              value={shift.status} 
-              onChange={handleChange}
-            >
-              <option value="Pendente">Pendente</option>
-              <option value="Aprovado">Aprovado</option>
-              <option value="Rejeitado">Rejeitado</option>
-              <option value="Concluído">Concluído</option>
-            </select>
-          </div>
+          {/* Status removido do formulário de edição conforme solicitado */}
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
             <button type="button" onClick={onClose} className="form-button" style={{ background: 'var(--secondary-text-color)' }}>
@@ -144,9 +88,15 @@ const ShiftChangeModal = ({ onClose, onSave, existingShift, profiles }) => {
 };
 
 // --- Modal para Ver Histórico ---
-const HistoryModal = ({ shift, onClose }) => {
+const HistoryModal = ({ shift, onClose, onView }) => {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (onView) {
+      onView(shift.id);
+    }
+  }, [shift.id, onView]);
 
   useEffect(() => {
     const fetchHistory = async () => {
@@ -154,7 +104,7 @@ const HistoryModal = ({ shift, onClose }) => {
         setLoading(true);
         const { data, error } = await supabase
           .from('shift_change_history')
-          .select('*, profiles(full_name)')
+          .select('*')
           .eq('shift_change_id', shift.id)
           .order('created_at', { ascending: false });
         
@@ -173,7 +123,7 @@ const HistoryModal = ({ shift, onClose }) => {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" style={{ maxWidth: '600px' }} onClick={e => e.stopPropagation()}>
-        <h2>Histórico: {shift.title}</h2>
+        <h2>Histórico da Troca de Turno</h2>
         <div className="history-list">
           {loading && <p>Carregando...</p>}
           {!loading && history.length === 0 && <p>Nenhum histórico encontrado.</p>}
@@ -181,7 +131,7 @@ const HistoryModal = ({ shift, onClose }) => {
             <div key={item.id} className="history-item">
               <p className="history-item-description">{item.event_description}</p>
               <p className="history-item-meta">
-                {new Date(item.created_at).toLocaleString('pt-BR')} - {item.profiles?.full_name || 'Sistema'}
+                {new Date(item.created_at).toLocaleString('pt-BR')}
               </p>
             </div>
           ))}
@@ -198,29 +148,54 @@ const HistoryModal = ({ shift, onClose }) => {
 function TrocaDeTurno() {
   const { user } = useAuth();
   const [shifts, setShifts] = useState([]);
+  const [archivedShifts, setArchivedShifts] = useState([]);
   const [profiles, setProfiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalState, setModalState] = useState({ type: null, shift: null });
+  const [showArchived, setShowArchived] = useState(false);
 
-  const fetchShiftsAndProfiles = async () => {
+  const fetchShifts = async () => {
     try {
       setLoading(true);
-      const [shiftsRes, profilesRes] = await Promise.all([
+      const [activeShiftsRes, archivedShiftsRes, profilesRes, viewsRes] = await Promise.all([
         supabase
           .from('shift_changes')
-          .select(`
-            *,
-            requester:profiles!shift_changes_requester_id_fkey(id, full_name),
-            assignee:profiles!shift_changes_assignee_id_fkey(id, full_name)
-          `)
+          .select('*')
+          .neq('status', 'Arquivado')
           .order('created_at', { ascending: false }),
-        supabase.from('profiles').select('id, full_name')
+        supabase
+          .from('shift_changes')
+          .select('*')
+          .eq('status', 'Arquivado')
+          .order('created_at', { ascending: false }),
+        supabase.from('profiles').select('id, full_name'),
+        supabase.from('shift_change_views').select('shift_change_id, viewed_by, created_at')
       ]);
       
-      if (shiftsRes.error) throw shiftsRes.error;
+      if (activeShiftsRes.error) throw activeShiftsRes.error;
+      if (archivedShiftsRes.error) throw archivedShiftsRes.error;
       if (profilesRes.error) throw profilesRes.error;
       
-      setShifts(shiftsRes.data || []);
+      const profileById = {};
+      (profilesRes.data || []).forEach(p => { profileById[p.id] = p; });
+      const viewsByShift = {};
+      const viewsRows = viewsRes?.error ? [] : (viewsRes.data || []);
+      viewsRows.forEach(v => {
+        if (!viewsByShift[v.shift_change_id]) viewsByShift[v.shift_change_id] = [];
+        const viewer = profileById[v.viewed_by];
+        viewsByShift[v.shift_change_id].push({
+          name: viewer?.full_name || v.viewed_by,
+          avatarUrl: viewer?.avatar_url || null,
+          at: v.created_at
+        });
+      });
+      const attach = (arr) => (arr || []).map(s => ({
+        ...s,
+        creator_name: profileById[s.created_by]?.full_name || 'Usuário',
+        viewers: viewsByShift[s.id] || []
+      }));
+      setShifts(attach(activeShiftsRes.data));
+      setArchivedShifts(attach(archivedShiftsRes.data));
       setProfiles(profilesRes.data || []);
     } catch (error) {
       console.error('Erro ao carregar trocas de turno:', error);
@@ -231,7 +206,7 @@ function TrocaDeTurno() {
   };
 
   useEffect(() => {
-    fetchShiftsAndProfiles();
+    fetchShifts();
   }, []);
 
   const handleSaveShift = async (shiftData, isEditing) => {
@@ -254,7 +229,7 @@ function TrocaDeTurno() {
       if (error) throw error;
       
       toast.success(`Troca de turno ${isEditing ? 'atualizada' : 'criada'}!`, { id: toastId });
-      fetchShiftsAndProfiles();
+      fetchShifts();
       return true;
     } catch (error) {
       toast.error('Erro: ' + error.message, { id: toastId });
@@ -274,131 +249,250 @@ function TrocaDeTurno() {
         if (error) throw error;
         
         toast.success('Troca de turno arquivada!', { id: toastId });
-        fetchShiftsAndProfiles();
+        fetchShifts();
       } catch (error) {
         toast.error('Erro ao arquivar: ' + error.message, { id: toastId });
       }
     }
   };
 
-  const getStatusClass = (status) => {
-    switch (status) {
-      case 'Pendente': return 'status-pendente';
-      case 'Aprovado': return 'status-aprovado';
-      case 'Rejeitado': return 'status-rejeitado';
-      case 'Concluído': return 'status-concluido';
-      case 'Arquivado': return 'status-arquivado';
-      default: return '';
+  const handleUnarchiveShift = async (shiftId) => {
+    const toastId = toast.loading('Desarquivando...');
+    try {
+      const { error } = await supabase
+        .from('shift_changes')
+        .update({ status: 'Aprovado' })
+        .eq('id', shiftId);
+      
+      if (error) throw error;
+      
+      toast.success('Troca de turno desarquivada!', { id: toastId });
+      fetchShifts();
+    } catch (error) {
+      toast.error('Erro ao desarquivar: ' + error.message, { id: toastId });
     }
+  };
+
+  const recordView = async (shiftId) => {
+    try {
+      await supabase
+        .from('shift_change_views')
+        .insert({
+          shift_change_id: shiftId,
+          viewed_by: user.id
+        });
+    } catch (error) {
+      console.error('Erro ao registrar visualização:', error);
+    }
+  };
+
+  const getStatusClass = (status) => {
+    if (status === 'Arquivado') return 'status-arquivado';
+    return 'status-aprovado';
   };
 
   const formatDateTime = (date, time) => {
     if (!date) return '---';
-    const dateObj = new Date(date);
-    const formattedDate = dateObj.toLocaleDateString('pt-BR');
-    return time ? `${formattedDate} às ${time}` : formattedDate;
+    const d = new Date(date);
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yy = String(d.getFullYear()).slice(-2);
+    const hh = time ? String(time).split(':')[0].padStart(2, '0') : '00';
+    const min = time ? String(time).split(':')[1].padStart(2, '0') : '00';
+    return `${dd}/${mm}/${yy} - ${hh}:${min}`;
   };
 
   if (loading) return <div className="loading-state">Carregando trocas de turno...</div>;
 
   return (
-    <div className="shift-changes-container">
-      <div className="shift-changes-header">
+    <div className="historico-container">
+      <div className="assets-page-header">
         <h1>🔄 Troca de Turno</h1>
-        <button className="form-button" onClick={() => setModalState({ type: 'add', shift: null })}>
-          <FaPlus style={{ marginRight: '8px' }} />
-          Nova Troca
-        </button>
+        <div className="search-and-actions">
+          <button 
+            className="form-button archive-toggle"
+            onClick={() => setShowArchived(!showArchived)}
+            style={{ background: showArchived ? 'var(--warning-color)' : 'var(--secondary-text-color)' }}
+          >
+            {showArchived ? <FaEyeSlash /> : <FaEye />}
+            {showArchived ? 'Ocultar Arquivados' : 'Ver Arquivados'}
+          </button>
+          <button className="form-button" onClick={() => setModalState({ type: 'add', shift: null })}>
+            <FaPlus style={{ marginRight: '8px' }} />
+            Nova Troca
+          </button>
+        </div>
       </div>
 
       <div className="shift-changes-content">
-        {shifts.length > 0 ? (
-          <div className="shifts-grid">
-            {shifts.map(shift => (
-              <div key={shift.id} className="shift-card">
-                <div className="shift-header">
-                  <h3 className="shift-title">{shift.title}</h3>
-                  <span className={`shift-status ${getStatusClass(shift.status)}`}>
-                    {shift.status}
-                  </span>
-                </div>
-                
-                <div className="shift-details">
-                  <div className="shift-info">
-                    <FaCalendarAlt className="shift-icon" />
-                    <span>{formatDateTime(shift.shift_date, shift.shift_time)}</span>
-                  </div>
-                  
-                  {shift.description && (
-                    <p className="shift-description">{shift.description}</p>
-                  )}
-                  
-                  <div className="shift-participants">
-                    {shift.requester && (
-                      <div className="participant">
-                        <FaUser className="participant-icon" />
-                        <span><strong>Solicitante:</strong> {shift.requester.full_name}</span>
-                      </div>
-                    )}
+        {/* Trocas Ativas */}
+        {!showArchived && (
+          <>
+            <h2 className="section-title">Trocas Ativas</h2>
+            {shifts.length > 0 ? (
+              <div className="shifts-grid">
+                {shifts.map(shift => (
+                  <div key={shift.id} className="shift-card">
+                    <div className="shift-header" />
                     
-                    {shift.assignee && (
-                      <div className="participant">
-                        <FaUser className="participant-icon" />
-                        <span><strong>Responsável:</strong> {shift.assignee.full_name}</span>
+                    <div className="shift-details">
+                      <div className="shift-info" title={`${new Date(shift.shift_date).toISOString()} ${shift.shift_time || ''}`.trim()}>
+                        <FaCalendarAlt className="shift-icon" />
+                        <span>{formatDateTime(shift.shift_date, shift.shift_time)}</span>
                       </div>
-                    )}
+                      
+                      <p className="shift-description">{shift.description}</p>
+                      
+                      <div className="shift-meta">
+                        <span className="shift-created">
+                          Criado por: {shift.creator_name}
+                        </span>
+                        <span className="shift-created">
+                          Criado em: {new Date(shift.created_at).toLocaleDateString('pt-BR')}
+                        </span>
+                        {shift.viewers && shift.viewers.length > 0 && (
+                          <span className="shift-viewers" title={shift.viewers.map(v => `${v.name} • ${new Date(v.at).toISOString()}`).join('\n')}>
+                            Visto por: {shift.viewers.slice(0, 3).map(v => v.name).join(', ')}{shift.viewers.length > 3 ? ` +${shift.viewers.length - 3}` : ''}
+                          </span>
+                        )}
+                        {shift.updated_at !== shift.created_at && (
+                          <span className="shift-updated">
+                            Atualizado em: {new Date(shift.updated_at).toLocaleDateString('pt-BR')}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="shift-actions">
+                      <button 
+                        className="action-btn edit"
+                        onClick={() => setModalState({ type: 'edit', shift: shift })}
+                        title="Editar"
+                      >
+                        <FaEdit />
+                      </button>
+                      
+                      <button 
+                        className="action-btn history"
+                        onClick={() => setModalState({ type: 'history', shift: shift })}
+                        title="Ver histórico"
+                      >
+                        <FaHistory />
+                      </button>
+
+                      {shift.viewers && shift.viewers.length > 0 && (
+                        <div className="viewers-avatars" style={{ display: 'flex', gap: '6px', marginLeft: 'auto' }}>
+                          {shift.viewers.slice(0, 5).map((v, idx) => (
+                            v.avatarUrl ? (
+                              <img key={idx} src={v.avatarUrl} title={`${v.name} • ${new Date(v.at).toISOString()}`} alt={v.name} style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--border-color)' }} />
+                            ) : (
+                              <div key={idx} className="avatar-dot" title={`${v.name} • ${new Date(v.at).toISOString()}`}></div>
+                            )
+                          ))}
+                        </div>
+                      )}
+                      
+                      <button 
+                        className="action-btn archive"
+                        onClick={() => handleArchiveShift(shift.id)}
+                        title="Arquivar"
+                      >
+                        <FaArchive />
+                      </button>
+                    </div>
                   </div>
-                  
-                  <div className="shift-meta">
-                    <span className="shift-created">
-                      Criado em: {new Date(shift.created_at).toLocaleDateString('pt-BR')}
-                    </span>
-                    {shift.updated_at !== shift.created_at && (
-                      <span className="shift-updated">
-                        Atualizado em: {new Date(shift.updated_at).toLocaleDateString('pt-BR')}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="shift-actions">
-                  <button 
-                    className="action-btn edit"
-                    onClick={() => setModalState({ type: 'edit', shift: shift })}
-                    title="Editar"
-                  >
-                    <FaEdit />
-                  </button>
-                  
-                  <button 
-                    className="action-btn history"
-                    onClick={() => setModalState({ type: 'history', shift: shift })}
-                    title="Ver histórico"
-                  >
-                    <FaHistory />
-                  </button>
-                  
-                  {shift.status !== 'Arquivado' && (
-                    <button 
-                      className="action-btn archive"
-                      onClick={() => handleArchiveShift(shift.id)}
-                      title="Arquivar"
-                    >
-                      <FaArchive />
-                    </button>
-                  )}
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="empty-state">
-            <div className="empty-icon">
-              <FaClock />
-            </div>
-            <h3>Nenhuma troca de turno encontrada</h3>
-            <p>Crie uma nova troca de turno para começar.</p>
-          </div>
+            ) : (
+              <div className="empty-state">
+                <div className="empty-icon">
+                  <FaClock />
+                </div>
+                <h3>Nenhuma troca de turno ativa</h3>
+                <p>Crie uma nova troca de turno para começar.</p>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Trocas Arquivadas */}
+        {showArchived && (
+          <>
+            <h2 className="section-title">Trocas Arquivadas</h2>
+            {archivedShifts.length > 0 ? (
+              <div className="shifts-grid">
+                {archivedShifts.map(shift => (
+                  <div key={shift.id} className="shift-card archived">
+                    <div className="shift-header" />
+                    
+                    <div className="shift-details">
+                      <div className="shift-info" title={`${new Date(shift.shift_date).toISOString()} ${shift.shift_time || ''}`.trim()}>
+                        <FaCalendarAlt className="shift-icon" />
+                        <span>{formatDateTime(shift.shift_date, shift.shift_time)}</span>
+                      </div>
+                      
+                      <p className="shift-description">{shift.description}</p>
+                      
+                      <div className="shift-meta">
+                        <span className="shift-created">
+                          Criado por: {shift.creator_name}
+                        </span>
+                        <span className="shift-created">
+                          Criado em: {new Date(shift.created_at).toLocaleDateString('pt-BR')}
+                        </span>
+                        {shift.viewers && shift.viewers.length > 0 && (
+                          <span className="shift-viewers" title={shift.viewers.map(v => `${v.name} • ${new Date(v.at).toISOString()}`).join('\n')}>
+                            Visto por: {shift.viewers.slice(0, 3).map(v => v.name).join(', ')}{shift.viewers.length > 3 ? ` +${shift.viewers.length - 3}` : ''}
+                          </span>
+                        )}
+                        <span className="shift-updated">
+                          Arquivado em: {new Date(shift.updated_at).toLocaleDateString('pt-BR')}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div className="shift-actions">
+                      <button 
+                        className="action-btn history"
+                        onClick={() => setModalState({ type: 'history', shift: shift })}
+                        title="Ver histórico"
+                      >
+                        <FaHistory />
+                      </button>
+
+                      {shift.viewers && shift.viewers.length > 0 && (
+                        <div className="viewers-avatars" style={{ display: 'flex', gap: '6px', marginLeft: 'auto' }}>
+                          {shift.viewers.slice(0, 5).map((v, idx) => (
+                            v.avatarUrl ? (
+                              <img key={idx} src={v.avatarUrl} title={`${v.name} • ${new Date(v.at).toISOString()}`} alt={v.name} style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--border-color)' }} />
+                            ) : (
+                              <div key={idx} className="avatar-dot" title={`${v.name} • ${new Date(v.at).toISOString()}`}></div>
+                            )
+                          ))}
+                        </div>
+                      )}
+                      
+                      <button 
+                        className="action-btn unarchive"
+                        onClick={() => handleUnarchiveShift(shift.id)}
+                        title="Desarquivar"
+                      >
+                        <FaEye />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="empty-state">
+                <div className="empty-icon">
+                  <FaArchive />
+                </div>
+                <h3>Nenhuma troca arquivada</h3>
+                <p>Não há trocas de turno arquivadas.</p>
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -406,7 +500,6 @@ function TrocaDeTurno() {
         <ShiftChangeModal 
           onClose={() => setModalState({ type: null, shift: null })} 
           onSave={handleSaveShift} 
-          profiles={profiles} 
         />
       )}
       
@@ -415,14 +508,14 @@ function TrocaDeTurno() {
           onClose={() => setModalState({ type: null, shift: null })} 
           onSave={handleSaveShift} 
           existingShift={modalState.shift} 
-          profiles={profiles} 
         />
       )}
       
       {modalState.type === 'history' && (
-        <HistoryModal 
-          shift={modalState.shift} 
-          onClose={() => setModalState({ type: null, shift: null })} 
+        <HistoryModal
+          shift={modalState.shift}
+          onClose={() => setModalState({ type: null, shift: null })}
+          onView={recordView}
         />
       )}
     </div>

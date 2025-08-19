@@ -544,10 +544,10 @@ function ControleDeEstoque() {
   if (loading) return <div className="loading-state">Carregando estoque...</div>;
 
   return (
-    <div>
+    <div className="historico-container">
       {/* Header */}
-      <div className="estoque-page-header">
-      <h1>Controle de Estoque</h1>
+      <div className="assets-page-header">
+        <h1>📦 Controle de Estoque</h1>
         <div className="search-and-actions">
           <div className="search-container">
             <input
@@ -586,7 +586,7 @@ function ControleDeEstoque() {
 
       {/* Abas dos Racks */}
       {racks.length > 0 && (
-        <div className="racks-tabs">
+        <div className="asset-tabs">
           {racks.map(rack => (
             <button
               key={rack.id}

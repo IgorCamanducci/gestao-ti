@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { supabase } from '../lib/supabaseClient';
 import { Link } from 'react-router-dom';
-import { FaPlus, FaWrench } from 'react-icons/fa';
+import { FaPlus, FaWrench, FaBoxOpen } from 'react-icons/fa';
 import { HiDotsVertical } from 'react-icons/hi';
 import toast from 'react-hot-toast';
 import './ControleDeAtivos.css';
@@ -440,88 +440,174 @@ function ControleDeAtivos() {
     }
   };
 
-  if (loading) return <div className="loading-state">Carregando ativos...</div>;
-
   return (
-    <div onClick={() => setMenuState({ asset: null, position: null })}>
+    <div className="historico-container">
       <div className="assets-page-header">
-        <h1>Controle de Ativos</h1>
+        <h1>📦 Controle de Ativos</h1>
         <div className="search-and-actions">
-          <input type="search" placeholder="Buscar por número de série ou campos configurados..." className="search-input" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-          <button className="form-button" onClick={() => setModalState({ type: 'add', asset: null })} disabled={categories.length === 0}>
+          <input
+            type="text"
+            placeholder="Buscar ativos..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="search-input"
+          />
+          <button className="form-button" onClick={() => setModalState({ type: 'add', asset: null })}>
             <FaPlus style={{ marginRight: '8px' }} />
             Novo Ativo
           </button>
         </div>
       </div>
 
+      {/* Abas de Categorias */}
       <div className="asset-tabs">
+        <button
+          className={activeTab === null ? 'active' : ''}
+          onClick={() => setActiveTab(null)}
+        >
+          Todas ({filteredAssets.length})
+        </button>
         {categories.map(category => (
-          <button key={category.id} onClick={() => setActiveTab(category.name)} className={activeTab === category.name ? 'active' : ''}>{category.name}</button>
+          <button
+            key={category.id}
+            className={activeTab === category.name ? 'active' : ''}
+            onClick={() => setActiveTab(category.name)}
+          >
+            {category.name} ({filteredAssets.filter(asset => asset.category === category.name).length})
+          </button>
         ))}
       </div>
 
       <div className="asset-table-container">
-        {categories.length > 0 && activeTab && currentHeaders.length > 0 ? (
-          <table className="asset-table">
-            <thead>
-              <tr>
-                {currentHeaders.map(header => <th key={header}>{header}</th>)}
-                <th style={{textAlign: 'right'}}>Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredAssets.length > 0 ? (
-                filteredAssets.map(asset => (
-                  <tr key={asset.id}>
-                    {currentHeaders.map(header => (
-                      <td key={header}>
-                        {getAssetValue(asset, header)}
-                      </td>
-                    ))}
-                    <td className="actions-cell">
-                      <button className="actions-button" onClick={(e) => handleMenuClick(asset, e)}>
-                        <HiDotsVertical size={20} />
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr><td colSpan={currentHeaders.length + 1} className="empty-state">Nenhum ativo encontrado para esta categoria.</td></tr>
-              )}
-            </tbody>
-          </table>
-        ) : categories.length === 0 ? (
-          <div className="empty-state">
-            <span>Nenhuma categoria de ativo foi criada. Vá para a <Link to="/configuracoes/categorias-ativos">página de gerenciamento</Link> para começar.</span>
-          </div>
-        ) : activeTab && (!fieldsConfig[activeTab] || fieldsConfig[activeTab].length === 0) ? (
-          <div className="empty-state">
-            <span>A categoria "{activeTab}" não possui campos configurados. Vá para a <Link to="/configuracoes/categorias-ativos">página de gerenciamento</Link> para adicionar campos.</span>
+        {loading ? (
+          <div className="loading-state">Carregando ativos...</div>
+        ) : filteredAssets.length > 0 ? (
+          <div className="assets-grid">
+            {filteredAssets.map(asset => (
+              <div key={asset.id} className={`asset-card status-${asset.status.replace(' ', '-').toLowerCase()}`}>
+                <div className="asset-header">
+                  <h3 className="asset-serial">{asset.serial_number || 'Sem número de série'}</h3>
+                  <span className={`asset-status status-${asset.status.replace(' ', '-').toLowerCase()}`}>
+                    {asset.status}
+                  </span>
+                </div>
+                
+                <div className="asset-category">
+                  Categoria: {asset.category || 'Sem categoria'}
+                </div>
+                
+                <div className="asset-metadata">
+                  {asset.description && (
+                    <div className="metadata-item">
+                      <span className="metadata-label">Descrição:</span>
+                      <span className="metadata-value">{asset.description}</span>
+                    </div>
+                  )}
+                  {asset.location && (
+                    <div className="metadata-item">
+                      <span className="metadata-label">Localização:</span>
+                      <span className="metadata-value">{asset.location}</span>
+                    </div>
+                  )}
+                  {asset.purchase_date && (
+                    <div className="metadata-item">
+                      <span className="metadata-label">Data de Compra:</span>
+                      <span className="metadata-value">
+                        {new Date(asset.purchase_date).toLocaleDateString('pt-BR')}
+                      </span>
+                    </div>
+                  )}
+                  {asset.warranty_expiry && (
+                    <div className="metadata-item">
+                      <span className="metadata-label">Garantia:</span>
+                      <span className="metadata-value">
+                        {new Date(asset.warranty_expiry).toLocaleDateString('pt-BR')}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="asset-actions">
+                  <button
+                    className="action-btn"
+                    onClick={() => setModalState({ type: 'edit', asset: asset })}
+                    title="Editar"
+                  >
+                    <FaEdit />
+                  </button>
+                  <button
+                    className="action-btn"
+                    onClick={() => setModalState({ type: 'maintenance', asset: asset })}
+                    title="Enviar para Manutenção"
+                  >
+                    <FaWrench />
+                  </button>
+                  <button
+                    className="action-btn"
+                    onClick={() => setModalState({ type: 'decommission', asset: asset })}
+                    title="Dar Baixa"
+                  >
+                    <FaTrash />
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
           <div className="empty-state">
-            <span>Selecione uma categoria para visualizar os ativos.</span>
+            <div className="empty-icon">
+                              <FaBoxOpen />
+            </div>
+            <h3>Nenhum ativo encontrado</h3>
+            <p>
+              {searchTerm || activeTab !== null 
+                ? 'Tente ajustar os filtros de busca.' 
+                : 'Comece adicionando seu primeiro ativo.'
+              }
+            </p>
+            {!searchTerm && activeTab === null && (
+              <button className="form-button" onClick={() => setModalState({ type: 'add', asset: null })}>
+                <FaPlus style={{ marginRight: '8px' }} />
+                Adicionar Primeiro Ativo
+              </button>
+            )}
           </div>
         )}
       </div>
 
-      {menuState.asset && (
-        <ActionsMenu
-          asset={menuState.asset}
-          position={menuState.position}
-          onClose={() => setMenuState({ asset: null, position: null })}
-          onEdit={(assetToEdit) => { setModalState({ type: 'edit', asset: assetToEdit }); setMenuState({ asset: null, position: null }); }}
-          onDelete={(assetId) => { handleDeleteAsset(assetId); setMenuState({ asset: null, position: null }); }}
-          onDecommission={(assetToDecommission) => { setModalState({ type: 'decommission', asset: assetToDecommission }); setMenuState({ asset: null, position: null }); }}
-          onSendToMaintenance={(assetToSend) => { setModalState({ type: 'maintenance', asset: assetToSend }); setMenuState({ asset: null, position: null }); }}
+      {/* Modais */}
+      {modalState.type === 'add' && (
+        <AssetModal
+          onClose={() => setModalState({ type: null, asset: null })}
+          onSave={handleSaveAsset}
+          categories={categories}
         />
       )}
       
-      {modalState.type === 'add' && <AssetModal onClose={() => setModalState({ type: null, asset: null })} onSave={handleSaveAsset} existingAsset={null} categories={categories} fieldsConfig={fieldsConfig} />}
-      {modalState.type === 'edit' && <AssetModal onClose={() => setModalState({ type: null, asset: null })} onSave={handleSaveAsset} existingAsset={modalState.asset} categories={categories} fieldsConfig={fieldsConfig} />}
-      {modalState.type === 'decommission' && <DecommissionModal asset={modalState.asset} onClose={() => setModalState({ type: null, asset: null })} onDecommission={handleDecommissionAsset} />}
-      {modalState.type === 'maintenance' && <MaintenanceModal asset={modalState.asset} onClose={() => setModalState({ type: null, asset: null })} onSave={handleSendToMaintenance} />}
+      {modalState.type === 'edit' && (
+        <AssetModal
+          onClose={() => setModalState({ type: null, asset: null })}
+          onSave={handleSaveAsset}
+          existingAsset={modalState.asset}
+          categories={categories}
+        />
+      )}
+      
+      {modalState.type === 'maintenance' && (
+        <MaintenanceModal
+          onClose={() => setModalState({ type: null, asset: null })}
+          onSave={handleSendToMaintenance}
+          asset={modalState.asset}
+        />
+      )}
+      
+      {modalState.type === 'decommission' && (
+        <DecommissionModal
+          onClose={() => setModalState({ type: null, asset: null })}
+          onSave={handleDecommissionAsset}
+          asset={modalState.asset}
+        />
+      )}
     </div>
   );
 }

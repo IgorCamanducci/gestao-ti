@@ -1,0 +1,169 @@
+.generator-panel {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.generator-panel .form-row {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.generator-panel .form-row.options label {
+	margin-right: 12px;
+}
+
+.generator-actions {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.generated-box {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.generated-box input {
+	flex: 1 1 auto;
+	padding: var(--spacing-sm);
+	border: 1px solid var(--border-color);
+	border-radius: var(--border-radius-sm);
+	background-color: var(--bg-color);
+	color: var(--primary-text-color);
+}
+
+.add-form {
+	display: flex;
+	gap: 12px;
+	flex-wrap: wrap;
+}
+
+.add-form input {
+	flex: 1 1 220px;
+}
+
+.generator-wrapper {
+	margin-top: 12px;
+}
+
+.generated-preview {
+	margin-top: 8px;
+	color: var(--secondary-text-color);
+}
+
+.password-cell {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.icon-button {
+	background: var(--bg-secondary-color);
+	border: 1px solid var(--border-color);
+	color: var(--primary-text-color);
+	padding: 6px 8px;
+	border-radius: 6px;
+}
+
+.danger-button {
+	background: #fee2e2;
+	border: 1px solid #fecaca;
+	color: #b91c1c;
+	padding: 6px 8px;
+	border-radius: 6px;
+}
+
+.muted {
+	color: var(--secondary-text-color);
+	font-size: 12px;
+}
+
+
+.senhas-grid {
+	display: grid;
+	grid-template-columns: 2fr 1fr;
+	gap: var(--spacing-lg);
+	margin-bottom: var(--spacing-lg);
+}
+
+.toolbar-group { display: flex; gap: 12px; }
+.toolbar-input { 
+	padding: var(--spacing-sm);
+	border: 1px solid var(--border-color);
+	border-radius: var(--border-radius-sm);
+	background-color: var(--bg-color);
+	color: var(--primary-text-color);
+}
+
+/* Harmonizar as linhas da tabela com padrão do site */
+.assets-table.refined td {
+	vertical-align: middle;
+	padding-top: 10px;
+	padding-bottom: 10px;
+}
+
+.asset-table-container {
+	margin-top: var(--spacing-md);
+}
+
+.table-actions input[type="text"] {
+	padding: var(--spacing-sm);
+	border: 1px solid var(--border-color);
+	border-radius: var(--border-radius-sm);
+	background-color: var(--bg-color);
+	color: var(--primary-text-color);
+}
+
+.passwords-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+	gap: var(--spacing-lg);
+}
+
+.password-card {
+	background: var(--bg-secondary-color);
+	border: 1px solid var(--border-color);
+	border-radius: var(--border-radius-lg);
+	padding: var(--spacing-md);
+}
+
+.password-card-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: var(--spacing-sm);
+}
+
+.password-title { margin: 0; color: var(--primary-text-color); font-size: var(--font-size-base); }
+
+.password-card-body { margin-bottom: var(--spacing-sm); }
+
+.password-card-footer {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	color: var(--tertiary-text-color);
+	font-size: var(--font-size-xs);
+}
+
+.assets-table.refined input[type="password"],
+.assets-table.refined input[type="text"] {
+	padding: var(--spacing-sm);
+	border: 1px solid var(--border-color);
+	border-radius: var(--border-radius-sm);
+	background-color: var(--bg-color);
+	color: var(--primary-text-color);
+}
+
+.generator-card .form-button {
+	width: 100%;
+}
+
+@media (max-width: 1024px) {
+	.senhas-grid {
+		grid-template-columns: 1fr;
+	}
+}

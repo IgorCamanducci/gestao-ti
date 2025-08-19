@@ -120,14 +120,16 @@ function AtivosEmManutencao() {
   if (loading) return <div className="loading-state">Carregando ativos em manutenção...</div>;
 
   return (
-    <div>
+    <div className="historico-container">
       <div className="assets-page-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-md)' }}>
-          <Link to="/ativos" className="form-button" style={{ background: 'var(--secondary-text-color)' }}>
-            <FaArrowLeft style={{ marginRight: '8px' }} />
-            Voltar
-          </Link>
-          <h1>Ativos em Manutenção</h1>
+        <h1>🔧 Ativos em Manutenção</h1>
+        <div className="search-and-actions">
+          <div style={{ marginLeft: 'auto' }}>
+            <Link to="/ativos" className="form-button" style={{ background: 'var(--secondary-text-color)' }}>
+              <FaArrowLeft style={{ marginRight: '8px' }} />
+              Voltar
+            </Link>
+          </div>
         </div>
       </div>
 

@@ -20,8 +20,42 @@
   font-weight: 700;
 }
 
+.header-actions {
+  display: flex;
+  gap: var(--spacing-md);
+  align-items: center;
+}
+
+.archive-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: none;
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  color: white;
+}
+
+.archive-toggle:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-card);
+}
+
 .shift-changes-content {
   margin-top: var(--spacing-lg);
+}
+
+.section-title {
+  margin: 0 0 var(--spacing-lg) 0;
+  color: var(--primary-text-color);
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 2px solid var(--border-color);
 }
 
 /* Grid de trocas de turno */
@@ -46,6 +80,15 @@
   transform: translateY(-2px);
 }
 
+.shift-card.archived {
+  opacity: 0.7;
+  background-color: var(--bg-tertiary-color);
+}
+
+.shift-card.archived:hover {
+  opacity: 1;
+}
+
 .shift-header {
   display: flex;
   justify-content: space-between;
@@ -68,11 +111,6 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-}
-
-.status-pendente {
-  background-color: rgba(255, 193, 7, 0.1);
-  color: #ffc107;
 }
 
 .status-aprovado {
@@ -119,24 +157,6 @@
   margin: var(--spacing-sm) 0;
 }
 
-.shift-participants {
-  margin: var(--spacing-md) 0;
-}
-
-.participant {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  margin-bottom: var(--spacing-xs);
-  font-size: var(--font-size-sm);
-  color: var(--secondary-text-color);
-}
-
-.participant-icon {
-  color: var(--primary-color);
-  font-size: var(--font-size-xs);
-}
-
 .shift-meta {
   display: flex;
   flex-direction: column;
@@ -157,6 +177,14 @@
   gap: var(--spacing-sm);
   justify-content: flex-end;
   margin-top: var(--spacing-md);
+}
+
+.avatar-dot {
+	width: 10px;
+	height: 10px;
+	border-radius: 50%;
+	background-color: var(--primary-color);
+	border: 1px solid var(--border-color);
 }
 
 .action-btn {
@@ -194,6 +222,14 @@
 
 .action-btn.archive:hover {
   background-color: rgba(255, 193, 7, 0.1);
+}
+
+.action-btn.unarchive {
+  color: var(--success-color);
+}
+
+.action-btn.unarchive:hover {
+  background-color: rgba(40, 167, 69, 0.1);
 }
 
 /* Estado vazio */
@@ -248,6 +284,11 @@
     align-items: flex-start;
   }
   
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
   .shifts-grid {
     grid-template-columns: 1fr;
   }
@@ -275,9 +316,9 @@
     padding: var(--spacing-sm);
   }
   
-  .shift-participants {
+  .header-actions {
     flex-direction: column;
-    gap: var(--spacing-xs);
+    gap: var(--spacing-sm);
   }
 }
 

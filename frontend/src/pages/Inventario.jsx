@@ -100,12 +100,14 @@ function Inventario() {
   }
 
   return (
-    <div className="inventario-container">
-      <div className="inventario-header">
-        <h1 className="inventario-title">📊 Inventário Geral</h1>
-        <p className="inventario-subtitle">
-          Visão geral de todos os ativos organizados por categoria
-        </p>
+    <div className="historico-container">
+      <div className="assets-page-header">
+        <h1>📊 Inventário Geral</h1>
+        <div className="search-and-actions">
+          <p style={{ color: 'var(--secondary-text-color)', margin: 0 }}>
+            Visão geral de todos os ativos organizados por categoria
+          </p>
+        </div>
       </div>
 
       {/* Estatísticas Gerais */}
