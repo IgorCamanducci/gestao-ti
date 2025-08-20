@@ -15,7 +15,7 @@
   box-shadow: var(--shadow-modal);
   padding: var(--spacing-2xl);
   width: 100%;
-  max-width: 400px;
+  max-width: 560px;
   border: 1px solid var(--border-color);
 }
 
@@ -151,6 +151,7 @@
   
   .login-card {
     padding: var(--spacing-xl);
+    max-width: 100%;
   }
   
   .login-title {
@@ -169,6 +170,13 @@
   .login-button {
     padding: var(--spacing-sm) var(--spacing-md);
     font-size: var(--font-size-sm);
+  }
+}
+
+/* Larguras intermediárias para melhorar preenchimento em desktop */
+@media (min-width: 1024px) {
+  .login-card {
+    max-width: 640px;
   }
 }
 

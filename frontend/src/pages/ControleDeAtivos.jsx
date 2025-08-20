@@ -364,7 +364,7 @@ function ControleDeAtivos() {
           asset_id: assetId,
           maintenance_date: maintenanceDate,
           description: description,
-          performed_by: 'Sistema'
+          performed_by: (await supabase.auth.getUser()).data.user?.id || 'Sistema'
         }]);
 
       if (maintenanceError) throw maintenanceError;

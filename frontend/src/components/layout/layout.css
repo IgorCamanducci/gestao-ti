@@ -299,6 +299,34 @@
   padding: 0;
 }
 
+/* ===== TOPBAR (Mobile) ===== */
+.topbar {
+  display: none;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--bg-secondary-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.mobile-menu-button {
+  background: none;
+  border: 1px solid var(--border-color);
+  color: var(--primary-text-color);
+  cursor: pointer;
+  padding: var(--spacing-xs);
+  border-radius: var(--border-radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-lg);
+}
+
+.topbar-title {
+  color: var(--primary-text-color);
+  font-weight: 700;
+}
+
 @media (max-width: 1024px) {
   .sidebar {
     position: fixed;
@@ -337,6 +365,10 @@
 
   .page-content.refined {
     margin-left: 0;
+  }
+
+  .topbar {
+    display: flex;
   }
 }
 

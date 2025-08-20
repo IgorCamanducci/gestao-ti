@@ -160,9 +160,9 @@
 .shift-meta {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xs);
-  margin-top: var(--spacing-md);
-  padding-top: var(--spacing-md);
+  gap: 2px;
+  margin-top: var(--spacing-sm);
+  padding-top: var(--spacing-sm);
   border-top: 1px solid var(--border-color);
 }
 
@@ -180,9 +180,12 @@
 .shift-actions {
   display: flex;
   gap: var(--spacing-sm);
-  justify-content: flex-end;
+  justify-content: flex-start;
   margin-top: var(--spacing-md);
 }
+
+.shift-actions-left { display: flex; align-items: center; gap: var(--spacing-sm); }
+.shift-actions-right { display: none; }
 
 .avatar-dot {
 	width: 10px;

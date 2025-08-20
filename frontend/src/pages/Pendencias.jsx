@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import { FaPlus, FaUserCircle, FaExclamationTriangle, FaCheckCircle, FaClock, FaUser, FaComment, FaEdit, FaTrash, FaEye, FaEyeSlash } from 'react-icons/fa';
@@ -426,7 +426,7 @@ function Pendencias() {
   const fetchTasksAndProfiles = async () => {
     try {
       setLoading(true);
-      const [tasksRes, profilesRes] = await Promise.all([
+      const [tasksRes, profilesRes, viewsRes] = await Promise.all([
         supabase
           .from('tasks')
           .select(`
@@ -435,12 +435,14 @@ function Pendencias() {
             creator:profiles!tasks_creator_id_fkey(id, full_name)
           `)
           .order('created_at', { ascending: false }),
-        supabase.from('profiles').select('id, full_name')
+        supabase.from('profiles').select('id, full_name, avatar_url'),
+        supabase.from('task_views').select('task_id, viewed_by, created_at')
       ]);
       
       if (tasksRes.error) throw tasksRes.error;
       if (profilesRes.error) throw profilesRes.error;
       const baseTasks = tasksRes.data || [];
+      const viewsRows = viewsRes?.error ? [] : (viewsRes.data || []);
 
       // Contar comentários por tarefa
       const taskIds = baseTasks.map(t => t.id);
@@ -457,7 +459,35 @@ function Pendencias() {
         }
       }
 
-      const tasksWithCounts = baseTasks.map(t => ({ ...t, comments_count: commentsCountMap[t.id] || 0 }));
+      // Mapear perfis
+      const profileById = {};
+      (profilesRes.data || []).forEach(p => { profileById[p.id] = p; });
+
+      // Montar viewers por tarefa (dedup por usuário com a visualização mais recente)
+      const viewsByTask = {};
+      viewsRows.forEach(v => {
+        const viewer = profileById[v.viewed_by];
+        const entry = {
+          userId: v.viewed_by,
+          name: viewer?.full_name || v.viewed_by,
+          avatarUrl: viewer?.avatar_url || null,
+          at: v.created_at,
+        };
+        if (!viewsByTask[v.task_id]) {
+          viewsByTask[v.task_id] = new Map([[v.viewed_by, entry]]);
+        } else {
+          const existing = viewsByTask[v.task_id].get(v.viewed_by);
+          if (!existing || new Date(entry.at) > new Date(existing.at)) {
+            viewsByTask[v.task_id].set(v.viewed_by, entry);
+          }
+        }
+      });
+
+      const tasksWithCounts = baseTasks.map(t => ({ 
+        ...t, 
+        comments_count: commentsCountMap[t.id] || 0,
+        viewers: viewsByTask[t.id] ? Array.from(viewsByTask[t.id].values()).sort((a,b)=> new Date(b.at)-new Date(a.at)) : []
+      }));
       setTasks(tasksWithCounts);
       setProfiles(profilesRes.data || []);
     } catch (error) {
@@ -471,6 +501,12 @@ function Pendencias() {
   useEffect(() => {
     fetchTasksAndProfiles();
   }, []);
+
+  useEffect(() => {
+    if (!loading && tasks && tasks.length > 0) {
+      autoArchiveCompletedTasks(tasks);
+    }
+  }, [loading, tasks]);
 
   const handleSaveTask = async (taskData, isEditing) => {
     const toastId = toast.loading(isEditing ? 'Atualizando...' : 'Criando pendência...');
@@ -544,6 +580,123 @@ function Pendencias() {
 
   const columns = showArchived ? ['Aberta', 'Em Andamento', 'Concluída', 'Arquivada'] : ['Aberta', 'Em Andamento', 'Concluída'];
 
+  const formatDateTimeShort = (isoString) => {
+    if (!isoString) return '---';
+    const d = new Date(isoString);
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yy = String(d.getFullYear()).slice(-2);
+    const hh = String(d.getHours()).padStart(2, '0');
+    const min = String(d.getMinutes()).padStart(2, '0');
+    return `${dd}/${mm}/${yy} - ${hh}:${min}`;
+  };
+
+  const recordView = async (taskId) => {
+    try {
+      const { error } = await supabase
+        .from('task_views')
+        .upsert({ task_id: taskId, viewed_by: user.id }, { onConflict: 'task_id,viewed_by' });
+      if (error) throw error;
+      fetchTasksAndProfiles();
+    } catch (e) {
+      console.error('Erro ao registrar visualização:', e);
+      toast.error('Não foi possível registrar a visualização.');
+    }
+  };
+
+  const onTaskCardClick = async (task) => {
+    // Registro no backend
+    recordView(task.id);
+    // Atualização otimista: adiciona o usuário atual na lista de visualizações
+    setTasks(prev => prev.map(t => {
+      if (t.id !== task.id) return t;
+      const viewerProfile = profiles.find(p => p.id === user.id);
+      const viewerEntry = {
+        userId: user.id,
+        name: viewerProfile?.full_name || 'Você',
+        avatarUrl: viewerProfile?.avatar_url || null,
+        at: new Date().toISOString(),
+      };
+      const existing = Array.isArray(t.viewers) ? t.viewers : [];
+      const withoutDup = existing.filter(v => v.userId !== user.id);
+      return { ...t, viewers: [viewerEntry, ...withoutDup] };
+    }));
+    setModalState({ type: 'edit', task: task });
+  };
+
+  const observerRef = useRef(null);
+  const viewedSetRef = useRef(new Set());
+
+  useEffect(() => {
+    if (loading) return;
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+    }
+    observerRef.current = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        const visibleEnough = entry.isIntersecting && entry.intersectionRatio >= 0.6;
+        if (!visibleEnough) return;
+        const taskId = entry.target.getAttribute('data-task-id');
+        if (!taskId) return;
+        const alreadyInSession = viewedSetRef.current.has(taskId);
+        const taskObj = tasks.find(t => String(t.id) === String(taskId));
+        const alreadyViewed = (taskObj?.viewers || []).some(v => v.userId === user.id);
+        if (!alreadyViewed && !alreadyInSession) {
+          viewedSetRef.current.add(taskId);
+          recordView(taskId);
+        }
+      });
+    }, { threshold: [0.6] });
+
+    tasks.forEach((t) => {
+      const el = document.getElementById(`task-card-${t.id}`);
+      if (el) {
+        el.setAttribute('data-task-id', String(t.id));
+        observerRef.current.observe(el);
+      }
+    });
+
+    return () => {
+      if (observerRef.current) observerRef.current.disconnect();
+    };
+  }, [tasks, loading, user.id]);
+
+  const getAutoArchiveInfo = (task) => {
+    if (task.status !== 'Concluída') return null;
+    const baseAt = new Date(task.updated_at || task.created_at).getTime();
+    const eightHours = 8 * 60 * 60 * 1000;
+    const archiveAt = baseAt + eightHours;
+    const now = Date.now();
+    const remainingMs = archiveAt - now;
+    if (remainingMs <= 0) return { text: 'Arquivar: pronto', ready: true };
+    const remainingMin = Math.ceil(remainingMs / (60 * 1000));
+    const hours = Math.floor(remainingMin / 60);
+    const minutes = remainingMin % 60;
+    const hh = String(hours).padStart(2, '0');
+    const mm = String(minutes).padStart(2, '0');
+    return { text: `Arquiva em ${hh}:${mm}`, ready: false };
+  };
+
+  const autoArchiveCompletedTasks = async (taskList) => {
+    try {
+      const eightHours = 8 * 60 * 60 * 1000;
+      const now = Date.now();
+      const dueIds = (taskList || [])
+        .filter(t => t.status === 'Concluída')
+        .filter(t => (new Date(t.updated_at || t.created_at).getTime() + eightHours) <= now)
+        .map(t => t.id);
+      if (dueIds.length === 0) return;
+      const { error } = await supabase
+        .from('tasks')
+        .update({ status: 'Arquivada' })
+        .in('id', dueIds);
+      if (!error) {
+        toast.success(`${dueIds.length} pendência(s) arquivada(s) automaticamente.`);
+        fetchTasksAndProfiles();
+      }
+    } catch (_) {}
+  };
+
   if (loading) return <div className="loading-state">Carregando pendências...</div>;
 
   return (
@@ -577,8 +730,9 @@ function Pendencias() {
               {(tasksByStatus[columnName] || []).map((task) => (
                 <div 
                   key={task.id} 
+                  id={`task-card-${task.id}`}
                   className={`task-card ${getPriorityClass(task.priority)}`}
-                  onClick={() => setModalState({ type: 'edit', task: task })}
+                  onClick={() => onTaskCardClick(task)}
                   style={{ cursor: 'pointer' }}
                   title="Clique para editar"
                 >
@@ -591,6 +745,8 @@ function Pendencias() {
                       {task.status}
                     </span>
                   </div>
+
+                  {/* Meta do topo removida para evitar duplicidade */}
                   
                   <h3 className="task-title">{task.title}</h3>
                   
@@ -606,26 +762,40 @@ function Pendencias() {
                   )}
                   
                   <div className="task-footer">
-                    <div className="task-assignee">
-                      {task.assignee ? (
-                        <>
-                          {task.assignee.avatar_url ? (
-                            <img 
-                              src={task.assignee.avatar_url} 
-                              alt={task.assignee.full_name}
-                              className="task-avatar"
-                            />
-                          ) : (
-                            <FaUserCircle className="task-avatar-placeholder" />
-                          )}
-                          <span>{task.assignee.full_name}</span>
-                        </>
-                      ) : (
-                        <div className="no-assignee">
-                          <FaUser className="no-assignee-icon" />
-                          <span>Sem atribuição</span>
-                        </div>
-                      )}
+                    <div className="task-footer-left">
+                      <div className="task-assignee">
+                        {task.assignee ? (
+                          <>
+                            {task.assignee.avatar_url ? (
+                              <img 
+                                src={task.assignee.avatar_url} 
+                                alt={task.assignee.full_name}
+                                className="task-avatar"
+                              />
+                            ) : (
+                              <FaUserCircle className="task-avatar-placeholder" />
+                            )}
+                            <span>{task.assignee.full_name}</span>
+                          </>
+                        ) : (
+                          <div className="no-assignee">
+                            <FaUser className="no-assignee-icon" />
+                            <span>Sem atribuição</span>
+                          </div>
+                        )}
+                      </div>
+                      {/* Metas discretas: criado em, visualizado por, e tempo para arquivar */}
+                      <div className="task-meta-inline">
+                        <span className="meta-line">Criação: {formatDateTimeShort(task.created_at)}</span>
+                        <span className="meta-line">
+                          Visualizado por: {task.viewers && task.viewers.length > 0 ? task.viewers.map(v => v.name.split(' ')[0]).join(', ') : '—'}
+                        </span>
+                        {getAutoArchiveInfo(task) && (
+                          <span className={`meta-line ${getAutoArchiveInfo(task).ready ? 'meta-archive-ready' : 'meta-archive-soon'}`}>
+                            Arquivar em: {getAutoArchiveInfo(task).ready ? 'pronto' : getAutoArchiveInfo(task).text.replace('Arquiva em ', '')}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     
                     <button 

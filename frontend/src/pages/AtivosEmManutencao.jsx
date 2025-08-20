@@ -100,7 +100,8 @@ function AtivosEmManutencao() {
         .update({ 
           status: 'Descartado',
           decommission_date: new Date().toISOString().split('T')[0],
-          decommission_reason: 'Baixa após manutenção'
+          decommission_reason: 'Baixa após manutenção',
+          performed_by: (await supabase.auth.getUser()).data.user?.id
         })
         .eq('id', assetId);
 

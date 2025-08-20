@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
-import { FaPlus, FaEdit, FaArchive, FaHistory, FaClock, FaCalendarAlt, FaEye, FaEyeSlash } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaArchive, FaClock, FaCalendarAlt, FaEye, FaEyeSlash } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 import './TrocaDeTurno.css';
 
@@ -172,11 +172,7 @@ const ViewShiftModal = ({ shift, onClose, onView }) => {
             <label>Visualizado por</label>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {shift.viewers.map(v => (
-                v.avatarUrl ? (
-                  <img key={v.userId} src={v.avatarUrl} title={`${v.name} • ${new Date(v.at).toLocaleString('pt-BR')}`} alt={v.name} style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--border-color)' }} />
-                ) : (
-                  <span key={v.userId} className="chip" title={`${v.name} • ${new Date(v.at).toLocaleString('pt-BR')}`}>{v.name.split(' ')[0]}</span>
-                )
+                <span key={v.userId} className="chip" title={`${v.name} • ${new Date(v.at).toLocaleString('pt-BR')}`}>{v.name.split(' ')[0]}</span>
               ))}
             </div>
           </div>
@@ -333,15 +329,30 @@ function TrocaDeTurno() {
 
   const recordView = async (shiftId) => {
     try {
-      await supabase
+      const { error } = await supabase
         .from('shift_change_views')
-        .insert({
-          shift_change_id: shiftId,
-          viewed_by: user.id
-        });
+        .upsert({ shift_change_id: shiftId, viewed_by: user.id }, { onConflict: 'shift_change_id,viewed_by' });
+      if (error) throw error;
     } catch (error) {
       console.error('Erro ao registrar visualização:', error);
     }
+  };
+
+  const optimisticAddViewer = (shiftId) => {
+    setShifts(prev => prev.map(s => {
+      if (s.id !== shiftId) return s;
+      const exists = (s.viewers || []).some(v => v.userId === user.id);
+      if (exists) return s;
+      const viewer = { userId: user.id, name: profiles.find(p => p.id === user.id)?.full_name || 'Você', at: new Date().toISOString(), avatarUrl: null };
+      return { ...s, viewers: [viewer, ...(s.viewers || [])] };
+    }));
+    setArchivedShifts(prev => prev.map(s => {
+      if (s.id !== shiftId) return s;
+      const exists = (s.viewers || []).some(v => v.userId === user.id);
+      if (exists) return s;
+      const viewer = { userId: user.id, name: profiles.find(p => p.id === user.id)?.full_name || 'Você', at: new Date().toISOString(), avatarUrl: null };
+      return { ...s, viewers: [viewer, ...(s.viewers || [])] };
+    }));
   };
 
   const getStatusClass = (status) => {
@@ -349,16 +360,83 @@ function TrocaDeTurno() {
     return 'status-aprovado';
   };
 
-  const formatDateTime = (date, time) => {
-    if (!date) return '---';
-    const d = new Date(date);
+  // Evita bug de fuso: formata data (YYYY-MM-DD) e hora (HH:MM) sem criar Date()
+  const formatShiftDateTime = (dateStr, timeStr) => {
+    if (!dateStr) return '---';
+    const [year, month, day] = String(dateStr).split('-').map(n => parseInt(n, 10));
+    const dd = String(day).padStart(2, '0');
+    const mm = String(month).padStart(2, '0');
+    const yy = String(year).slice(-2);
+    const [hh = '00', min = '00'] = String(timeStr || '').split(':');
+    return `${dd}/${mm}/${yy} - ${String(hh).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+  };
+
+  const formatIsoDateTimeBR = (isoString) => {
+    if (!isoString) return '---';
+    const d = new Date(isoString);
     const dd = String(d.getDate()).padStart(2, '0');
     const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const yy = String(d.getFullYear()).slice(-2);
-    const hh = time ? String(time).split(':')[0].padStart(2, '0') : '00';
-    const min = time ? String(time).split(':')[1].padStart(2, '0') : '00';
-    return `${dd}/${mm}/${yy} - ${hh}:${min}`;
+    const yyyy = d.getFullYear();
+    const hh = String(d.getHours()).padStart(2, '0');
+    const min = String(d.getMinutes()).padStart(2, '0');
+    return `${dd}/${mm}/${yyyy} às ${hh}:${min}`;
   };
+
+  // Visibilidade automática: registra visualização quando o card estiver 60% visível
+  const observerRef = useRef(null);
+  const viewedSetRef = useRef(new Set());
+  useEffect(() => {
+    if (loading) return;
+    if (observerRef.current) observerRef.current.disconnect();
+    observerRef.current = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        const visibleEnough = entry.isIntersecting && entry.intersectionRatio >= 0.4;
+        if (!visibleEnough) return;
+        const shiftId = entry.target.getAttribute('data-shift-id');
+        if (!shiftId) return;
+        const alreadySession = viewedSetRef.current.has(shiftId);
+        const shiftObj = [...shifts, ...archivedShifts].find(s => String(s.id) === String(shiftId));
+        const alreadyViewed = (shiftObj?.viewers || []).some(v => v.userId === user.id);
+        if (!alreadyViewed && !alreadySession) {
+          viewedSetRef.current.add(shiftId);
+          optimisticAddViewer(shiftId);
+          recordView(shiftId);
+        }
+      });
+    }, { threshold: [0.4], rootMargin: '0px 0px -20% 0px' });
+
+    const all = [...shifts, ...archivedShifts];
+    all.forEach((s) => {
+      const el = document.getElementById(`shift-card-${s.id}`);
+      if (el) {
+        el.setAttribute('data-shift-id', String(s.id));
+        observerRef.current.observe(el);
+      }
+    });
+
+    // Registro imediato ao abrir a página para os cards visíveis atualmente
+    requestAnimationFrame(() => {
+      const viewportH = window.innerHeight || document.documentElement.clientHeight;
+      const allNow = [...shifts, ...archivedShifts];
+      allNow.forEach(s => {
+        const el = document.getElementById(`shift-card-${s.id}`);
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        const height = rect.height || 1;
+        const visible = Math.max(0, Math.min(rect.bottom, viewportH) - Math.max(rect.top, 0));
+        const ratio = visible / height;
+        if (ratio >= 0.4) {
+          optimisticAddViewer(s.id);
+          recordView(s.id);
+          viewedSetRef.current.add(String(s.id));
+        }
+      });
+    });
+
+    return () => {
+      if (observerRef.current) observerRef.current.disconnect();
+    };
+  }, [shifts, archivedShifts, loading, user.id]);
 
   if (loading) return <div className="loading-state">Carregando trocas de turno...</div>;
 
@@ -392,6 +470,7 @@ function TrocaDeTurno() {
                 {shifts.map(shift => (
                   <div
                     key={shift.id}
+                    id={`shift-card-${shift.id}`}
                     className="shift-card"
                     onClick={() => setModalState({ type: 'view', shift })}
                     title="Clique para ver detalhes"
@@ -399,69 +478,42 @@ function TrocaDeTurno() {
                     <div className="shift-header" />
                     
                     <div className="shift-details">
-                      <div className="shift-info" title={`${new Date(shift.shift_date).toISOString()} ${shift.shift_time || ''}`.trim()}>
+                      <div className="shift-info">
                         <FaCalendarAlt className="shift-icon" />
-                        <span>{formatDateTime(shift.shift_date, shift.shift_time)}</span>
+                        <span>{formatShiftDateTime(shift.shift_date, shift.shift_time)}</span>
                       </div>
                       
                       <p className="shift-description">{shift.description}</p>
                       
                       <div className="shift-meta">
-                        <span className="shift-created">
-                          Criado por: {shift.creator_name}
-                        </span>
-                        <span className="shift-created">
-                          Criado em: {new Date(shift.created_at).toLocaleDateString('pt-BR')}
-                        </span>
+                        <span className="shift-created">Criado por: {shift.creator_name}, em {formatIsoDateTimeBR(shift.created_at)}</span>
                         {shift.viewers && shift.viewers.length > 0 && (
-                          <span className="shift-viewers" title={shift.viewers.map(v => `${v.name} • ${new Date(v.at).toISOString()}`).join('\n')}>
-                            Visto por: {shift.viewers.slice(0, 2).map(v => v.name.split(' ')[0]).join(', ')}{shift.viewers.length > 2 ? ` +${shift.viewers.length - 2}` : ''}
-                          </span>
-                        )}
-                        {shift.updated_at !== shift.created_at && (
-                          <span className="shift-updated">
-                            Atualizado em: {new Date(shift.updated_at).toLocaleDateString('pt-BR')}
+                          <span className="shift-viewers">
+                            Visualizado por: {shift.viewers.map(v => v.name.split(' ')[0]).join(', ')}
                           </span>
                         )}
                       </div>
                     </div>
                     
                     <div className="shift-actions">
-                      <button 
-                        className="action-btn edit"
-                        onClick={(e) => { e.stopPropagation(); setModalState({ type: 'edit', shift }); }}
-                        title="Editar"
-                      >
-                        <FaEdit />
-                      </button>
-                      
-                      <button 
-                        className="action-btn history"
-                        onClick={(e) => { e.stopPropagation(); setModalState({ type: 'view', shift }); }}
-                        title="Ver histórico"
-                      >
-                        <FaHistory />
-                      </button>
-
-                      {shift.viewers && shift.viewers.length > 0 && (
-                        <div className="viewers-avatars" style={{ display: 'flex', gap: '6px', marginLeft: 'auto' }}>
-                          {shift.viewers.slice(0, 5).map((v) => (
-                            v.avatarUrl ? (
-                              <img key={v.userId} src={v.avatarUrl} title={`${v.name} • ${new Date(v.at).toISOString()}`} alt={v.name} style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--border-color)' }} />
-                            ) : (
-                              <div key={v.userId} className="avatar-dot" title={`${v.name} • ${new Date(v.at).toISOString()}`}></div>
-                            )
-                          ))}
-                        </div>
-                      )}
-                      
-                      <button 
-                        className="action-btn archive"
-                        onClick={(e) => { e.stopPropagation(); handleArchiveShift(shift.id); }}
-                        title="Arquivar"
-                      >
-                        <FaArchive />
-                      </button>
+                      <div className="shift-actions-left">
+                        <button 
+                          className="action-btn edit"
+                          onClick={(e) => { e.stopPropagation(); setModalState({ type: 'edit', shift }); }}
+                          title="Editar"
+                        >
+                          <FaEdit />
+                        </button>
+                        
+                        {/* Botão Ver histórico removido */}
+                        <button 
+                          className="action-btn archive"
+                          onClick={(e) => { e.stopPropagation(); handleArchiveShift(shift.id); }}
+                          title="Arquivar"
+                        >
+                          <FaArchive />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -485,63 +537,39 @@ function TrocaDeTurno() {
             {archivedShifts.length > 0 ? (
               <div className="shifts-grid">
                 {archivedShifts.map(shift => (
-                  <div key={shift.id} className="shift-card archived">
+                  <div key={shift.id} id={`shift-card-${shift.id}`} className="shift-card archived">
                     <div className="shift-header" />
                     
                     <div className="shift-details">
-                      <div className="shift-info" title={`${new Date(shift.shift_date).toISOString()} ${shift.shift_time || ''}`.trim()}>
+                      <div className="shift-info">
                         <FaCalendarAlt className="shift-icon" />
-                        <span>{formatDateTime(shift.shift_date, shift.shift_time)}</span>
+                        <span>{formatShiftDateTime(shift.shift_date, shift.shift_time)}</span>
                       </div>
                       
                       <p className="shift-description">{shift.description}</p>
                       
                       <div className="shift-meta">
-                        <span className="shift-created">
-                          Criado por: {shift.creator_name}
-                        </span>
-                        <span className="shift-created">
-                          Criado em: {new Date(shift.created_at).toLocaleDateString('pt-BR')}
-                        </span>
+                        <span className="shift-created">Criado por: {shift.creator_name}, em {formatIsoDateTimeBR(shift.created_at)}</span>
+                        <span className="shift-updated">Arquivado em: {formatIsoDateTimeBR(shift.updated_at)}</span>
                         {shift.viewers && shift.viewers.length > 0 && (
-                          <span className="shift-viewers" title={shift.viewers.map(v => `${v.name} • ${new Date(v.at).toISOString()}`).join('\n')}>
-                            Visto por: {shift.viewers.slice(0, 3).map(v => v.name).join(', ')}{shift.viewers.length > 3 ? ` +${shift.viewers.length - 3}` : ''}
+                          <span className="shift-viewers">
+                            Visualizado por: {shift.viewers.map(v => v.name.split(' ')[0]).join(', ')}
                           </span>
                         )}
-                        <span className="shift-updated">
-                          Arquivado em: {new Date(shift.updated_at).toLocaleDateString('pt-BR')}
-                        </span>
                       </div>
                     </div>
                     
                     <div className="shift-actions">
-                      <button 
-                        className="action-btn history"
-                        onClick={() => setModalState({ type: 'history', shift: shift })}
-                        title="Ver histórico"
-                      >
-                        <FaHistory />
-                      </button>
-
-                      {shift.viewers && shift.viewers.length > 0 && (
-                        <div className="viewers-avatars" style={{ display: 'flex', gap: '6px', marginLeft: 'auto' }}>
-                          {shift.viewers.slice(0, 5).map((v) => (
-                            v.avatarUrl ? (
-                              <img key={v.userId} src={v.avatarUrl} title={`${v.name} • ${new Date(v.at).toISOString()}`} alt={v.name} style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--border-color)' }} />
-                            ) : (
-                              <div key={v.userId} className="avatar-dot" title={`${v.name} • ${new Date(v.at).toISOString()}`}></div>
-                            )
-                          ))}
-                        </div>
-                      )}
-                      
-                      <button 
-                        className="action-btn unarchive"
-                        onClick={() => handleUnarchiveShift(shift.id)}
-                        title="Desarquivar"
-                      >
-                        <FaEye />
-                      </button>
+                      <div className="shift-actions-left">
+                        {/* Botão Ver histórico removido */}
+                        <button 
+                          className="action-btn unarchive"
+                          onClick={() => handleUnarchiveShift(shift.id)}
+                          title="Desarquivar"
+                        >
+                          <FaEye />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}

@@ -180,6 +180,17 @@ function Layout() {
 
       {/* Conteúdo principal */}
       <main className="main-content refined">
+        {/* Topbar para dispositivos móveis */}
+        <header className="topbar">
+          <button
+            className="mobile-menu-button"
+            onClick={() => setIsSidebarOpen(true)}
+            title="Abrir menu"
+          >
+            <FaBars />
+          </button>
+          <span className="topbar-title">Gestão TI</span>
+        </header>
         <div className="page-content refined">
           <Outlet />
         </div>
@@ -187,7 +198,7 @@ function Layout() {
         {/* Rodapé com direitos autorais */}
         <footer className="footer">
           <div className="footer-content">
-            <p>&copy; 2024 Desenvolvido por Igor Camanducci. Todos os direitos reservados.</p>
+            <p>&copy; {new Date().getFullYear()} Desenvolvido por Igor Camanducci. Todos os direitos reservados.</p>
           </div>
         </footer>
       </main>
