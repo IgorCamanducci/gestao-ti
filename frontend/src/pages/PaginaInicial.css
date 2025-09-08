@@ -78,15 +78,38 @@
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-lg);
   padding: var(--spacing-lg);
+  box-shadow: var(--shadow-card);
+  transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
-  transition: all var(--transition-fast);
 }
 
-.stat-card:hover {
-  box-shadow: var(--shadow-card);
-  transform: translateY(-2px);
+.stat-card.clickable {
+  cursor: pointer;
+}
+
+.stat-card.clickable:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-card-hover);
+  border-color: var(--primary-color);
+}
+
+.stat-card-link {
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  width: 100%;
+  height: 100%;
+}
+
+.stat-card-link:hover {
+  text-decoration: none;
+  color: inherit;
 }
 
 .stat-card.primary {

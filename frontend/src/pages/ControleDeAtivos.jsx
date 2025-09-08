@@ -322,24 +322,36 @@ function ControleDeAtivos() {
     try {
       const toastId = toast.loading('Registrando baixa...');
       
-      // Atualizar o ativo diretamente na tabela ativos
-      const { error } = await supabase
+      // Primeiro, inserir na tabela baixas
+      const { error: baixaError } = await supabase
+        .from('baixas')
+        .insert([{
+          asset_id: assetId,
+          reason: reason,
+          decommission_date: decommissionDate,
+          created_by: (await supabase.auth.getUser()).data.user?.id
+        }]);
+
+      if (baixaError) throw baixaError;
+      
+      // Depois, atualizar o status do ativo
+      const { error: updateError } = await supabase
         .from('ativos')
         .update({
           status: 'Descartado',
           decommission_date: decommissionDate,
-          decommission_reason: reason,
-          performed_by: (await supabase.auth.getUser()).data.user?.id
+          decommission_reason: reason
         })
         .eq('id', assetId);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
       
       toast.success('Baixa registrada com sucesso!', { id: toastId });
       // Recarregar dados e fechar modal
       await fetchInitialData();
       return true;
     } catch (error) {
+      console.error('Erro ao dar baixa:', error);
       toast.error('Erro ao dar baixa: ' + error.message);
       return false;
     }
@@ -349,7 +361,19 @@ function ControleDeAtivos() {
     try {
       const toastId = toast.loading('Enviando para manutenção...');
       
-      // Atualizar status do ativo
+      // Primeiro, inserir na tabela de manutenção
+      const { error: maintenanceError } = await supabase
+        .from('manutencao')
+        .insert([{
+          asset_id: assetId,
+          maintenance_date: maintenanceDate,
+          description: description,
+          performed_by: (await supabase.auth.getUser()).data.user?.id
+        }]);
+
+      if (maintenanceError) throw maintenanceError;
+
+      // Depois, atualizar status do ativo
       const { error: updateError } = await supabase
         .from('ativos')
         .update({ status: 'Em manutenção' })
@@ -357,22 +381,11 @@ function ControleDeAtivos() {
 
       if (updateError) throw updateError;
 
-      // Registrar na tabela de manutenção
-      const { error: maintenanceError } = await supabase
-        .from('manutencao_ativos')
-        .insert([{
-          asset_id: assetId,
-          maintenance_date: maintenanceDate,
-          description: description,
-          performed_by: (await supabase.auth.getUser()).data.user?.id || 'Sistema'
-        }]);
-
-      if (maintenanceError) throw maintenanceError;
-
       toast.success('Ativo enviado para manutenção!', { id: toastId });
       fetchInitialData();
       return true;
     } catch (error) {
+      console.error('Erro ao enviar para manutenção:', error);
       toast.error('Erro ao enviar para manutenção: ' + error.message);
       return false;
     }

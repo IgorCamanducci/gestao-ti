@@ -5,7 +5,7 @@ import { useTheme } from '../../context/ThemeContext';
 import {
   FaUserCircle, FaBars, FaHome, FaCalendarAlt, FaBoxOpen, FaUsers,
   FaCogs, FaSignOutAlt, FaTasks, FaExchangeAlt, FaWarehouse, FaDesktop,
-  FaHistory, FaSun, FaMoon, FaWrench, FaKey
+  FaHistory, FaSun, FaMoon, FaWrench, FaKey, FaStickyNote
 } from 'react-icons/fa';
 import './layout.css';
 
@@ -41,12 +41,13 @@ function Layout() {
     { path: '/', name: 'Página Inicial', icon: <FaHome /> },
     { path: '/pendencias', name: 'Pendências', icon: <FaTasks /> },
     { path: '/turno', name: 'Troca de Turno', icon: <FaExchangeAlt /> },
-    { path: '/inventario', name: 'Controle de Inventário', icon: <FaBoxOpen /> },
-    { path: '/estoque', name: 'Controle de Estoque', icon: <FaWarehouse /> },
-    { path: '/ativos', name: 'Inventário', icon: <FaDesktop /> },
+    { path: '/inventario', name: 'Inventário', icon: <FaBoxOpen /> },
+    { path: '/estoque', name: 'Estoque', icon: <FaWarehouse /> },
+    { path: '/ativos', name: 'Ativos', icon: <FaDesktop /> },
     { path: '/manutencao', name: 'Manutenção', icon: <FaWrench /> },
     { path: '/historico', name: 'Histórico', icon: <FaHistory /> },
     { path: '/folgas', name: 'Gestão de Folgas', icon: <FaCalendarAlt /> },
+    { path: '/anotacoes', name: 'Anotações', icon: <FaStickyNote /> },
     { path: '/senhas', name: 'Senhas', icon: <FaKey /> },
     profile?.role === 'coordenador' && { path: '/usuarios', name: 'Usuários', icon: <FaUsers /> },
   ].filter(Boolean);

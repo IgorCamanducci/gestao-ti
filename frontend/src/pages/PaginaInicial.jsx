@@ -11,14 +11,27 @@ import { Link } from 'react-router-dom';
 import './PaginaInicial.css';
 
 // --- Componente para os Cards de Estatística ---
-const StatCard = ({ title, value, icon, type = 'primary', subtitle = null }) => (
-  <div className={`stat-card ${type}`}>
-    <div className="stat-icon">{icon}</div>
-    <div className="stat-content">
-      <div className="stat-value">{value || 0}</div>
-      <div className="stat-label">{title}</div>
-      {subtitle && <div className="stat-subtitle">{subtitle}</div>}
-    </div>
+const StatCard = ({ title, value, icon, type = 'primary', subtitle = null, link = null }) => (
+  <div className={`stat-card ${type} ${link ? 'clickable' : ''}`}>
+    {link ? (
+      <Link to={link} className="stat-card-link">
+        <div className="stat-icon">{icon}</div>
+        <div className="stat-content">
+          <div className="stat-value">{value || 0}</div>
+          <div className="stat-label">{title}</div>
+          {subtitle && <div className="stat-subtitle">{subtitle}</div>}
+        </div>
+      </Link>
+    ) : (
+      <>
+        <div className="stat-icon">{icon}</div>
+        <div className="stat-content">
+          <div className="stat-value">{value || 0}</div>
+          <div className="stat-label">{title}</div>
+          {subtitle && <div className="stat-subtitle">{subtitle}</div>}
+        </div>
+      </>
+    )}
   </div>
 );
 
@@ -210,24 +223,28 @@ function PaginaInicial() {
               value={stats?.total_assets} 
               icon={<FaDesktop />} 
               type="primary" 
+              link="/ativos"
             />
             <StatCard 
               title="Em Uso" 
               value={stats?.assets_in_use} 
               icon={<FaDesktop />} 
               type="success" 
+              link="/ativos"
             />
             <StatCard 
               title="Em Manutenção" 
               value={stats?.assets_in_maintenance} 
               icon={<FaWrench />} 
               type="warning" 
+              link="/manutencao"
             />
             <StatCard 
               title="Em Estoque" 
               value={stats?.assets_in_stock} 
               icon={<FaWarehouse />} 
               type="info" 
+              link="/estoque"
             />
           </div>
 
@@ -237,24 +254,28 @@ function PaginaInicial() {
               value={stats?.total_users} 
               icon={<FaUsers />} 
               type="primary" 
+              link="/usuarios"
             />
             <StatCard 
               title="Coordenadores" 
               value={stats?.coordinators} 
               icon={<FaUserTie />} 
               type="info" 
+              link="/usuarios"
             />
             <StatCard 
               title="Pendências Abertas" 
               value={stats?.pending_tasks} 
               icon={<FaTasks />} 
               type="warning" 
+              link="/pendencias"
             />
             <StatCard 
               title="Tarefas Críticas" 
               value={stats?.critical_tasks} 
               icon={<FaExclamationTriangle />} 
               type="danger" 
+              link="/pendencias"
             />
           </div>
 
@@ -392,24 +413,28 @@ function PaginaInicial() {
               value={stats?.pending_tasks} 
               icon={<FaTasks />} 
               type="warning" 
+              link="/pendencias"
             />
             <StatCard 
               title="Tarefas Críticas" 
               value={stats?.critical_tasks} 
               icon={<FaExclamationTriangle />} 
               type="danger" 
+              link="/pendencias"
             />
             <StatCard 
               title="Ativos Disponíveis" 
               value={stats?.assets_in_stock} 
               icon={<FaWarehouse />} 
               type="success" 
+              link="/estoque"
             />
             <StatCard 
               title="Em Manutenção" 
               value={stats?.assets_in_maintenance} 
               icon={<FaWrench />} 
               type="info" 
+              link="/manutencao"
             />
           </div>
 
