@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import './Login.css'; // Reutilizando o estilo do login
+import './Login.css';
 import { Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
 function RecuperarSenha() {
   const [email, setEmail] = useState('');
@@ -13,32 +14,51 @@ function RecuperarSenha() {
     setLoading(true);
     setMessage('');
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin + '/update-password',
-      });
+      const siteUrl = import.meta.env.VITE_SITE_URL || window.location.origin;
+      const redirectTo = `${siteUrl}/update-password`;
+      const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
       if (error) throw error;
-      setMessage('Link de recuperação enviado! Verifique seu e-mail.');
+      toast.success('Link de recuperação enviado! Verifique seu e-mail.');
+      setMessage('');
     } catch (error) {
-      setMessage('Erro: ' + error.message);
+      toast.error('Erro: ' + error.message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="login-page">
-      <div className="login-container">
-        <h1>Recuperar Senha</h1>
-        <p style={{ color: 'var(--secondary-text-color)', marginTop: '-1rem', marginBottom: '1.5rem' }}>
-          Digite seu e-mail para receber um link de recuperação.
-        </p>
+    <div className="login-container">
+      <div className="login-card">
+        <div className="login-header">
+          <div className="login-logo">🔒</div>
+          <h1 className="login-title">Recuperar Senha</h1>
+          <p className="login-subtitle">Digite seu e-mail para receber um link de recuperação</p>
+        </div>
+
         <form className="login-form" onSubmit={handlePasswordReset}>
-          <input type="email" placeholder="Seu e-mail" value={email} onChange={(e) => setEmail(e.target.value)} required />
-          <button type="submit" disabled={loading}>{loading ? 'Enviando...' : 'Enviar Link'}</button>
+          <div className="form-group">
+            <label htmlFor="email">E-mail</label>
+            <input
+              type="email"
+              id="email"
+              placeholder="Digite seu e-mail"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              disabled={loading}
+            />
+          </div>
+
+          <button type="submit" className="login-button" disabled={loading}>
+            {loading ? 'Enviando...' : 'Enviar link'}
+          </button>
         </form>
-        {message && <p style={{marginTop: '16px'}}>{message}</p>}
-        <div className="forgot-password-link">
-          <Link to="/login">Voltar para o Login</Link>
+
+        {message && <p style={{ marginTop: '12px' }}>{message}</p>}
+
+        <div className="login-footer">
+          <Link to="/login">Voltar para o login</Link>
         </div>
       </div>
     </div>

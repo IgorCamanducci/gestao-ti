@@ -5,13 +5,11 @@ import './Historico.css';
 import './ControleDeAtivos.css';
 
 function Historico() {
-  const [ativos, setAtivos] = useState([]);
+  const [baixas, setBaixas] = useState([]);
   const [manutencoes, setManutencoes] = useState([]);
-  const [categorias, setCategorias] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState('');
-  const [typeTab, setTypeTab] = useState('baixas'); // 'baixas' | 'manutencao'
+  const [activeTab, setActiveTab] = useState('baixas'); // 'baixas' | 'manutencao'
 
   useEffect(() => {
     fetchData();
@@ -21,75 +19,144 @@ function Historico() {
     try {
       setLoading(true);
       
-      // Buscar categorias
-      const { data: categoriasData, error: categoriasError } = await supabase
-        .from('asset_categories')
-        .select('*')
-        .order('name');
+      // Buscar baixas da tabela baixas
+      let baixasData = [];
+      try {
+        const { data: baixasRes, error: baixasError } = await supabase
+          .from('baixas')
+          .select('*')
+          .order('created_at', { ascending: false });
 
-      if (categoriasError) throw categoriasError;
+        if (baixasError) {
+          console.error('Erro ao buscar baixas:', baixasError);
+        } else {
+          baixasData = baixasRes || [];
+        }
+      } catch (error) {
+        console.error('Erro na consulta de baixas:', error);
+      }
 
-      // Baixas (ativos descartados)
-      const [ativosRes, manutencaoRes] = await Promise.all([
-        supabase
-          .from('ativos')
-          .select('*, profiles(full_name)')
-          .eq('status', 'Descartado')
-          .order('decommission_date', { ascending: false }),
-        supabase
-          .from('manutencao_ativos')
-          .select('id, asset_id, maintenance_date, description, performed_by')
-          .order('maintenance_date', { ascending: false })
-      ]);
+      // Buscar manutenções da tabela manutencao
+      let manutData = [];
+      try {
+        const { data: manutencaoRes, error: manutencaoError } = await supabase
+          .from('manutencao')
+          .select('*')
+          .order('maintenance_date', { ascending: false });
 
-      if (ativosRes.error) throw ativosRes.error;
-      if (manutencaoRes.error) throw manutencaoRes.error;
+        if (manutencaoError) {
+          console.error('Erro ao buscar manutenções:', manutencaoError);
+        } else {
+          manutData = manutencaoRes || [];
+        }
+      } catch (error) {
+        console.error('Erro na consulta de manutenção:', error);
+      }
 
-      const ativosData = ativosRes.data || [];
-      const manutData = manutencaoRes.data || [];
+      // Enriquecer baixas com dados do ativo e usuário que fez a baixa
+      const assetIdsBaixas = Array.from(new Set(baixasData.map(b => b.asset_id).filter(Boolean)));
+      const userIdsBaixas = Array.from(new Set(baixasData.map(b => b.created_by).filter(Boolean)));
+      
+      let assetsInfoBaixas = { data: [], error: null };
+      let usersInfoBaixas = { data: [], error: null };
 
-      // Enriquecer manutenção com dados do ativo e do usuário
-      const assetIds = Array.from(new Set(manutData.map(r => r.asset_id).filter(Boolean)));
-      const userIds = Array.from(new Set(manutData
-        .map(r => r.performed_by)
-        .filter(v => typeof v === 'string' && v.length >= 20)
-      ));
+      if (assetIdsBaixas.length > 0) {
+        try {
+          assetsInfoBaixas = await supabase
+            .from('ativos')
+            .select('id, serial_number, category')
+            .in('id', assetIdsBaixas);
+          
+          if (assetsInfoBaixas.error) {
+            console.error('Erro ao buscar informações dos ativos para baixas:', assetsInfoBaixas.error);
+          }
+        } catch (error) {
+          console.error('Erro na consulta de informações dos ativos para baixas:', error);
+        }
+      }
 
-      const [assetsInfoRes, usersInfoRes] = await Promise.all([
-        assetIds.length > 0
-          ? supabase.from('ativos').select('id, serial_number, category').in('id', assetIds)
-          : Promise.resolve({ data: [], error: null }),
-        userIds.length > 0
-          ? supabase.from('profiles').select('id, full_name').in('id', userIds)
-          : Promise.resolve({ data: [], error: null })
-      ]);
+      if (userIdsBaixas.length > 0) {
+        try {
+          usersInfoBaixas = await supabase
+            .from('profiles')
+            .select('id, full_name')
+            .in('id', userIdsBaixas);
+          
+          if (usersInfoBaixas.error) {
+            console.error('Erro ao buscar informações dos usuários para baixas:', usersInfoBaixas.error);
+          }
+        } catch (error) {
+          console.error('Erro na consulta de informações dos usuários para baixas:', error);
+        }
+      }
 
-      if (assetsInfoRes.error) throw assetsInfoRes.error;
-      if (usersInfoRes.error) throw usersInfoRes.error;
+      // Enriquecer manutenções com dados do ativo e usuário que mandou para manutenção
+      const assetIdsManut = Array.from(new Set(manutData.map(m => m.asset_id).filter(Boolean)));
+      const userIdsManut = Array.from(new Set(manutData.map(m => m.performed_by).filter(Boolean)));
+      
+      let assetsInfoManut = { data: [], error: null };
+      let usersInfoManut = { data: [], error: null };
 
-      const assetMap = {};
-      (assetsInfoRes.data || []).forEach(a => { assetMap[a.id] = a; });
-      const userMap = {};
-      (usersInfoRes.data || []).forEach(u => { userMap[u.id] = u.full_name; });
+      if (assetIdsManut.length > 0) {
+        try {
+          assetsInfoManut = await supabase
+            .from('ativos')
+            .select('id, serial_number, category')
+            .in('id', assetIdsManut);
+          
+          if (assetsInfoManut.error) {
+            console.error('Erro ao buscar informações dos ativos para manutenções:', assetsInfoManut.error);
+          }
+        } catch (error) {
+          console.error('Erro na consulta de informações dos ativos para manutenções:', error);
+        }
+      }
 
-      const manutencoesEnriquecidas = manutData.map(r => ({
-        ...r,
-        asset: assetMap[r.asset_id] || null,
-        performer_name: userMap[r.performed_by] || (r.performed_by ? 'Usuário' : 'Sistema')
+      if (userIdsManut.length > 0) {
+        try {
+          usersInfoManut = await supabase
+            .from('profiles')
+            .select('id, full_name')
+            .in('id', userIdsManut);
+          
+          if (usersInfoManut.error) {
+            console.error('Erro ao buscar informações dos usuários para manutenções:', usersInfoManut.error);
+          }
+        } catch (error) {
+          console.error('Erro na consulta de informações dos usuários para manutenções:', error);
+        }
+      }
+
+      const assetMapBaixas = {};
+      (assetsInfoBaixas.data || []).forEach(a => { assetMapBaixas[a.id] = a; });
+
+      const userMapBaixas = {};
+      (usersInfoBaixas.data || []).forEach(u => { userMapBaixas[u.id] = u; });
+
+      const assetMapManut = {};
+      (assetsInfoManut.data || []).forEach(a => { assetMapManut[a.id] = a; });
+
+      const userMapManut = {};
+      (usersInfoManut.data || []).forEach(u => { userMapManut[u.id] = u; });
+
+      const baixasEnriquecidas = baixasData.map(b => ({
+        ...b,
+        asset: assetMapBaixas[b.asset_id] || null,
+        user: userMapBaixas[b.created_by] || null
       }));
 
-      setCategorias(categoriasData || []);
-      setAtivos(ativosData);
-      setManutencoes(manutencoesEnriquecidas);
-      
-      // Definir primeira categoria como ativa
-      if (categoriasData && categoriasData.length > 0) {
-        setActiveTab(categoriasData[0].name);
-      }
+      const manutencoesEnriquecidas = manutData.map(m => ({
+        ...m,
+        asset: assetMapManut[m.asset_id] || null,
+        user: userMapManut[m.performed_by] || null
+      }));
+
+      setBaixas(baixasEnriquecidas || []);
+      setManutencoes(manutencoesEnriquecidas || []);
     } catch (error) {
       console.error('Erro ao carregar dados do histórico:', error);
-      setCategorias([]);
-      setAtivos([]);
+      setBaixas([]);
+      setManutencoes([]);
     } finally {
       setLoading(false);
     }
@@ -97,33 +164,32 @@ function Historico() {
 
   // Filtros
   const filteredBaixas = useMemo(() => {
-    return ativos.filter(ativo => {
-      const matchesCategory = !activeTab || ativo.category === activeTab;
+    return baixas.filter(baixa => {
       const s = (searchTerm || '').toLowerCase();
       const matchesSearch = !s || 
-        (ativo.serial_number && ativo.serial_number.toLowerCase().includes(s)) ||
-        (ativo.category && ativo.category.toLowerCase().includes(s)) ||
-        (ativo.decommission_reason && ativo.decommission_reason.toLowerCase().includes(s));
-      return matchesCategory && matchesSearch;
+        (baixa.asset?.serial_number && baixa.asset.serial_number.toLowerCase().includes(s)) ||
+        (baixa.asset?.category && baixa.asset.category.toLowerCase().includes(s)) ||
+        (baixa.reason && baixa.reason.toLowerCase().includes(s));
+      return matchesSearch;
     });
-  }, [ativos, activeTab, searchTerm]);
+  }, [baixas, searchTerm]);
 
   const filteredManutencoes = useMemo(() => {
-    return manutencoes.filter(r => {
-      const cat = r.asset?.category || '';
-      const serial = r.asset?.serial_number || '';
-      const desc = r.description || '';
-      const matchesCategory = !activeTab || cat === activeTab;
+    return manutencoes.filter(manut => {
+      const cat = manut.asset?.category || '';
+      const serial = manut.asset?.serial_number || '';
+      const desc = manut.description || '';
       const s = (searchTerm || '').toLowerCase();
       const matchesSearch = !s || serial.toLowerCase().includes(s) || cat.toLowerCase().includes(s) || desc.toLowerCase().includes(s);
-      return matchesCategory && matchesSearch;
+      return matchesSearch;
     });
-  }, [manutencoes, activeTab, searchTerm]);
+  }, [manutencoes, searchTerm]);
 
   const getStatusIcon = (statusOrType) => {
     if (statusOrType === 'manutencao') return <FaWrench />;
     switch (statusOrType) {
       case 'Descartado':
+      case 'Baixa':
         return <FaBox />;
       default:
         return <FaBox />;
@@ -133,6 +199,7 @@ function Historico() {
   const getStatusClass = (status) => {
     switch (status) {
       case 'Descartado':
+      case 'Baixa':
         return 'status-descartado';
       default:
         return '';
@@ -144,27 +211,18 @@ function Historico() {
     return new Date(dateString).toLocaleDateString('pt-BR');
   };
 
-  const formatDateTime = (dateString) => {
-    if (!dateString) return '-';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('pt-BR') + ' ' + date.toLocaleTimeString('pt-BR', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    });
-  };
-
   const handleExport = () => {
-    if (typeTab === 'baixas') {
+    if (activeTab === 'baixas') {
       const csvContent = [
         ['Número de Série', 'Categoria', 'Status', 'Data de Baixa', 'Motivo da Baixa', 'Responsável', 'Data de Criação'],
-        ...filteredBaixas.map(ativo => [
-          ativo.serial_number || '-',
-          ativo.category || '-',
-          ativo.status,
-          formatDate(ativo.decommission_date),
-          (ativo.decommission_reason || '-').replace(/\n/g, ' '),
-          ativo.profiles?.full_name || 'Sistema',
-          formatDate(ativo.created_at)
+        ...filteredBaixas.map(baixa => [
+          baixa.asset?.serial_number || '-',
+          baixa.asset?.category || '-',
+          'Baixa',
+          formatDate(baixa.decommission_date || baixa.created_at),
+          (baixa.reason || '-').replace(/\n/g, ' '),
+          baixa.user?.full_name || 'Usuário não identificado',
+          formatDate(baixa.created_at)
         ])
       ].map(row => row.join(',')).join('\n');
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -179,13 +237,13 @@ function Historico() {
     } else {
       const csvContent = [
         ['Número de Série', 'Categoria', 'Status', 'Data de Envio', 'Descrição', 'Responsável'],
-        ...filteredManutencoes.map(r => [
-          r.asset?.serial_number || '-',
-          r.asset?.category || '-',
+        ...filteredManutencoes.map(manut => [
+          manut.asset?.serial_number || '-',
+          manut.asset?.category || '-',
           'Em manutenção',
-          formatDate(r.maintenance_date),
-          (r.description || '-').replace(/\n/g, ' '),
-          r.performer_name || 'Sistema'
+          formatDate(manut.maintenance_date),
+          (manut.description || '-').replace(/\n/g, ' '),
+          manut.user?.full_name || 'Usuário não identificado'
         ])
       ].map(row => row.join(',')).join('\n');
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -214,71 +272,55 @@ function Historico() {
   return (
     <div className="historico-container">
       {/* Header da página */}
-      <div className="assets-page-header">
-        <h1>📋 Histórico</h1>
-        <div className="search-and-actions">
-          <input 
-            type="search" 
-            placeholder={typeTab === 'baixas' ? 'Buscar por número de série, categoria ou motivo...' : 'Buscar por número de série, categoria ou descrição...'} 
-            className="search-input" 
-            value={searchTerm} 
-            onChange={(e) => setSearchTerm(e.target.value)} 
-          />
-          <button className="form-button" onClick={handleExport}>
-            <FaDownload style={{ marginRight: '8px' }} />
-            Exportar CSV
-          </button>
-        </div>
+      <div className="historico-header">
+        <h1 className="historico-title">📋 Histórico</h1>
+        <p className="historico-subtitle">Visualize o histórico de baixas e manutenções</p>
       </div>
 
       {/* Abas de tipo */}
-      <div className="asset-tabs" style={{ marginBottom: 'var(--spacing-sm)' }}>
+      <div className="historico-tabs">
         <button
-          onClick={() => setTypeTab('baixas')}
-          className={typeTab === 'baixas' ? 'active' : ''}
+          onClick={() => setActiveTab('baixas')}
+          className={`historico-tab ${activeTab === 'baixas' ? 'active' : ''}`}
         >
           Baixas ({filteredBaixas.length})
         </button>
         <button
-          onClick={() => setTypeTab('manutencao')}
-          className={typeTab === 'manutencao' ? 'active' : ''}
+          onClick={() => setActiveTab('manutencao')}
+          className={`historico-tab ${activeTab === 'manutencao' ? 'active' : ''}`}
         >
           Manutenção ({filteredManutencoes.length})
         </button>
       </div>
 
-      {/* Abas de categorias */}
-      <div className="asset-tabs">
-        <button 
-          onClick={() => setActiveTab('')} 
-          className={activeTab === '' ? 'active' : ''}
-        >
-          Todas ({typeTab === 'baixas' ? filteredBaixas.length : filteredManutencoes.length})
+      {/* Barra de busca e ações */}
+      <div className="search-and-actions" style={{ marginBottom: 'var(--spacing-xl)' }}>
+        <input 
+          type="search" 
+          placeholder={activeTab === 'baixas' ? 'Buscar por número de série, categoria ou motivo...' : 'Buscar por número de série, categoria ou descrição...'} 
+          className="search-input" 
+          value={searchTerm} 
+          onChange={(e) => setSearchTerm(e.target.value)} 
+        />
+        <button className="form-button" onClick={handleExport}>
+          <FaDownload style={{ marginRight: '8px' }} />
+          Exportar CSV
         </button>
-        {categorias.map(category => (
-          <button 
-            key={category.id} 
-            onClick={() => setActiveTab(category.name)} 
-            className={activeTab === category.name ? 'active' : ''}
-          >
-            {category.name} ({(typeTab === 'baixas' ? filteredBaixas : filteredManutencoes).filter(item => (typeTab === 'baixas' ? item.category : item.asset?.category) === category.name).length})
-          </button>
-        ))}
       </div>
 
       {/* Tabela de resultados */}
       <div className="asset-table-container">
         <table className="asset-table">
           <thead>
-            {typeTab === 'baixas' ? (
+            {activeTab === 'baixas' ? (
               <tr>
                 <th>Número de Série</th>
                 <th>Categoria</th>
                 <th>Status</th>
-                <th>Data de Baixa</th>
+                <th>Data do Registro</th>
                 <th>Motivo da Baixa</th>
                 <th>Responsável</th>
-                <th>Data de Criação</th>
+                <th>Data da Baixa</th>
               </tr>
             ) : (
               <tr>
@@ -292,47 +334,47 @@ function Historico() {
             )}
           </thead>
           <tbody>
-            {typeTab === 'baixas' ? (
+            {activeTab === 'baixas' ? (
               filteredBaixas.length > 0 ? (
-                filteredBaixas.map(ativo => (
-                  <tr key={ativo.id}>
+                filteredBaixas.map(baixa => (
+                  <tr key={baixa.id}>
                     <td className="asset-name">
                       <div className="asset-info">
                         <span className="asset-icon">
-                          {getStatusIcon(ativo.status)}
+                          {getStatusIcon('Baixa')}
                         </span>
                         <span className="asset-serial-number">
-                          {ativo.serial_number || 'Sem número de série'}
+                          {baixa.asset?.serial_number || 'Sem número de série'}
                         </span>
                       </div>
                     </td>
                     <td className="asset-category">
-                      {ativo.category || 'Sem categoria'}
+                      {baixa.asset?.category || 'Sem categoria'}
                     </td>
-                    <td className={getStatusClass(ativo.status)}>
+                    <td className={getStatusClass('Baixa')}>
                       <span className="status-badge descartado">
-                        {ativo.status === 'Descartado' ? 'Baixa' : ativo.status}
+                        Baixa
                       </span>
                     </td>
                     <td className="asset-date">
                       <div className="date-info">
                         <FaCalendar className="date-icon" />
-                        <span>{formatDate(ativo.decommission_date)}</span>
+                        <span>{formatDate(baixa.created_at)}</span>
                       </div>
                     </td>
                     <td className="asset-reason">
-                      {ativo.decommission_reason || 'Sem motivo especificado'}
+                      {baixa.reason || 'Sem motivo especificado'}
                     </td>
-                    <td className="asset-user">
+                    <td className="asset-responsible">
                       <div className="user-info">
                         <FaUser className="user-icon" />
-                        <span>{ativo.profiles?.full_name || 'Sistema'}</span>
+                        <span>{baixa.user?.full_name || 'Usuário não identificado'}</span>
                       </div>
                     </td>
                     <td className="asset-created">
                       <div className="date-info">
                         <FaCalendar className="date-icon" />
-                        <span>{formatDate(ativo.created_at)}</span>
+                        <span>{formatDate(baixa.decommission_date)}</span>
                       </div>
                     </td>
                   </tr>
@@ -340,42 +382,42 @@ function Historico() {
               ) : (
                 <tr>
                   <td colSpan={7} className="empty-state">
-                    {searchTerm || activeTab 
-                      ? 'Nenhum ativo encontrado com os filtros aplicados.'
-                      : 'Nenhum ativo com baixa encontrado.'
+                    {searchTerm 
+                      ? 'Nenhuma baixa encontrada com os filtros aplicados.'
+                      : 'Nenhuma baixa encontrada.'
                     }
                   </td>
                 </tr>
               )
             ) : (
               filteredManutencoes.length > 0 ? (
-                filteredManutencoes.map(r => (
-                  <tr key={r.id}>
+                filteredManutencoes.map(manut => (
+                  <tr key={manut.id}>
                     <td className="asset-name">
                       <div className="asset-info">
                         <span className="asset-icon">
                           {getStatusIcon('manutencao')}
                         </span>
                         <span className="asset-serial-number">
-                          {r.asset?.serial_number || '---'}
+                          {manut.asset?.serial_number || '---'}
                         </span>
                       </div>
                     </td>
-                    <td className="asset-category">{r.asset?.category || '---'}</td>
+                    <td className="asset-category">{manut.asset?.category || '---'}</td>
                     <td className="status-em-manutencao">
                       <span className="status-badge">Em manutenção</span>
                     </td>
                     <td className="asset-date">
                       <div className="date-info">
                         <FaCalendar className="date-icon" />
-                        <span>{formatDate(r.maintenance_date)}</span>
+                        <span>{formatDate(manut.maintenance_date)}</span>
                       </div>
                     </td>
-                    <td className="asset-reason">{r.description || '-'}</td>
-                    <td className="asset-user">
+                    <td className="asset-reason">{manut.description || '-'}</td>
+                    <td className="asset-responsible">
                       <div className="user-info">
                         <FaUser className="user-icon" />
-                        <span>{r.performer_name || 'Sistema'}</span>
+                        <span>{manut.user?.full_name || 'Usuário não identificado'}</span>
                       </div>
                     </td>
                   </tr>
@@ -383,7 +425,7 @@ function Historico() {
               ) : (
                 <tr>
                   <td colSpan={6} className="empty-state">
-                    {searchTerm || activeTab 
+                    {searchTerm 
                       ? 'Nenhum registro encontrado com os filtros aplicados.'
                       : 'Nenhum registro de manutenção encontrado.'
                     }

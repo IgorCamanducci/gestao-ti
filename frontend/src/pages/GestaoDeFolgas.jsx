@@ -91,14 +91,61 @@ function GestaoDeFolgas() {
   const fetchFolgas = async () => {
     try {
       setLoading(true);
-      let query = supabase.from('folgas').select(`*, profiles ( full_name, avatar_url )`);
-      if (activeFilter !== 'todos') query = query.eq('status', activeFilter);
+      
+      // Usar a tabela folgas (que existe e tem dados)
+      let query = supabase.from('folgas').select('*');
+      
+      if (activeFilter !== 'todos') {
+        // Mapear filtros para valores corretos do banco
+        let statusFilter = activeFilter;
+        if (activeFilter === 'pendente') statusFilter = 'Pendente';
+        if (activeFilter === 'aprovado') statusFilter = 'Aprovada';
+        if (activeFilter === 'rejeitado') statusFilter = 'Rejeitada';
+        
+        query = query.eq('status', statusFilter);
+      }
+      
       query = query.order('created_at', { ascending: false });
       const { data, error } = await query;
-      if (error) throw error;
-      setFolgas(data);
+      
+      if (error) {
+        console.error('Erro na consulta de folgas:', error);
+        throw error;
+      }
+      
+      // Se houver dados, buscar informações dos usuários em paralelo
+      let folgasComUsuarios = data || [];
+      if (folgasComUsuarios.length > 0) {
+        const userIds = Array.from(new Set(folgasComUsuarios.map(f => f.user_id).filter(Boolean)));
+        
+        if (userIds.length > 0) {
+          try {
+            const { data: usersData, error: usersError } = await supabase
+              .from('profiles')
+              .select('id, full_name, avatar_url')
+              .in('id', userIds);
+            
+            if (!usersError && usersData) {
+              const userMap = {};
+              usersData.forEach(user => { userMap[user.id] = user; });
+              
+              folgasComUsuarios = folgasComUsuarios.map(folga => ({
+                ...folga,
+                profiles: userMap[folga.user_id] || { full_name: 'Usuário', avatar_url: null }
+              }));
+            }
+          } catch (userError) {
+            console.error('Erro ao buscar informações dos usuários:', userError);
+            // Continuar sem informações dos usuários
+          }
+        }
+      }
+      
+      setFolgas(folgasComUsuarios);
     } catch (error) {
-      toast.error('Erro ao carregar os pedidos de folga.');
+      console.error('Erro ao carregar os pedidos de folgas:', error);
+      toast.error('Erro ao carregar os pedidos de folgas.');
+      setFolgas([]);
     } finally {
       setLoading(false);
     }
@@ -119,7 +166,7 @@ function GestaoDeFolgas() {
           start_date: requestData.startDate,
           end_date: requestData.endDate,
           reason: requestData.reason,
-          worked_holiday_date: requestData.workedHoliday || null,
+          status: requestData.status
         }).eq('id', editingRequest.id);
         error = updateError;
       } else {
@@ -128,7 +175,7 @@ function GestaoDeFolgas() {
           start_date: requestData.startDate,
           end_date: requestData.endDate,
           reason: requestData.reason,
-          worked_holiday_date: requestData.workedHoliday || null,
+          status: 'Pendente'
         });
         error = insertError;
       }
@@ -143,8 +190,7 @@ function GestaoDeFolgas() {
     }
   };
 
-  const handleDeleteRequest = async (folgaId) => {
-    if (!window.confirm('Tem certeza que deseja excluir esta solicitação?')) return;
+  const handleDelete = async (folgaId) => {
     const toastId = toast.loading('Excluindo solicitação...');
     try {
       const { error } = await supabase.from('folgas').delete().eq('id', folgaId);
@@ -152,19 +198,28 @@ function GestaoDeFolgas() {
       toast.success('Solicitação excluída!', { id: toastId });
       fetchFolgas();
     } catch (error) {
-      toast.error('Erro ao excluir: ' + error.message, { id: toastId });
+      console.error('Erro ao excluir solicitação:', error);
+      toast.error('Erro ao excluir solicitação.', { id: toastId });
     }
   };
 
-  const handleUpdateStatus = async (folgaId, newStatus) => {
+  const handleStatusChange = async (folgaId, newStatus) => {
     const toastId = toast.loading('Atualizando status...');
     try {
-      const { error } = await supabase.from('folgas').update({ status: newStatus }).eq('id', folgaId);
+      const { error } = await supabase
+        .from('folgas')
+        .update({ 
+          status: newStatus,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', folgaId);
+      
       if (error) throw error;
-      toast.success(`Pedido ${newStatus === 'aprovado' ? 'aprovado' : 'rejeitado'}!`, { id: toastId });
+      toast.success(`Pedido ${newStatus === 'Aprovada' ? 'aprovado' : 'rejeitado'}!`, { id: toastId });
       fetchFolgas();
     } catch (error) {
-      toast.error('Erro ao atualizar status: ' + error.message, { id: toastId });
+      console.error('Erro ao atualizar status:', error);
+      toast.error('Erro ao atualizar status.', { id: toastId });
     }
   };
 
@@ -291,7 +346,7 @@ function GestaoDeFolgas() {
                           <HiDotsVertical />
                         </button>
                       )}
-                      {isCoordinator && folga.status === 'pendente' && (
+                      {isCoordinator && folga.status === 'Pendente' && (
                         <div style={{ display: 'flex', gap: 'var(--spacing-xs)', marginTop: 'var(--spacing-xs)' }}>
                           <button 
                             className="form-button" 
@@ -302,7 +357,7 @@ function GestaoDeFolgas() {
                             }}
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleUpdateStatus(folga.id, 'rejeitado');
+                              handleStatusChange(folga.id, 'Rejeitada');
                             }}
                           >
                             Rejeitar
@@ -310,12 +365,12 @@ function GestaoDeFolgas() {
                           <button className="form-button" 
                             style={{ 
                               background: 'var(--success-color)', 
-                              padding: 'var(--spacing-sm)',
+                              padding: 'var(--spacing-xs) var(--spacing-sm)',
                               fontSize: 'var(--font-size-xs)'
                             }}
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleUpdateStatus(folga.id, 'aprovado');
+                              handleStatusChange(folga.id, 'Aprovada');
                             }}
                           >
                             Aprovar
@@ -341,7 +396,7 @@ function GestaoDeFolgas() {
             setMenuState({ request: null, position: null });
           }}
           onDelete={(requestId) => {
-            handleDeleteRequest(requestId);
+            handleDelete(requestId);
             setMenuState({ request: null, position: null });
           }}
         />

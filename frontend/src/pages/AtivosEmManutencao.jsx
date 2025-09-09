@@ -27,7 +27,7 @@ function AtivosEmManutencao() {
         (assetsData || []).map(async (asset) => {
           try {
             const { data: maintenanceData, error: maintenanceError } = await supabase
-              .from('manutencao_ativos')
+              .from('manutencao')
               .select('maintenance_date, description, performed_by')
               .eq('asset_id', asset.id)
               .order('maintenance_date', { ascending: false })

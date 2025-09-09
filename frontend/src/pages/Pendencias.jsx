@@ -426,36 +426,57 @@ function Pendencias() {
   const fetchTasksAndProfiles = async () => {
     try {
       setLoading(true);
-      const [tasksRes, profilesRes, viewsRes] = await Promise.all([
-        supabase
-          .from('tasks')
-          .select(`
-            *,
-            assignee:profiles!tasks_assignee_id_fkey(id, full_name, avatar_url),
-            creator:profiles!tasks_creator_id_fkey(id, full_name)
-          `)
-          .order('created_at', { ascending: false }),
+      
+      // Buscar tarefas primeiro
+      const { data: tasksData, error: tasksError } = await supabase
+        .from('tasks')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (tasksError) {
+        console.error('Erro na consulta tasks:', tasksError);
+        throw tasksError;
+      }
+
+      const baseTasks = tasksData || [];
+      
+      if (baseTasks.length === 0) {
+        setTasks([]);
+        setProfiles([]);
+        return;
+      }
+
+      // Buscar perfis e views em paralelo
+      const [profilesRes, viewsRes] = await Promise.all([
         supabase.from('profiles').select('id, full_name, avatar_url'),
         supabase.from('task_views').select('task_id, viewed_by, created_at')
       ]);
-      
-      if (tasksRes.error) throw tasksRes.error;
-      if (profilesRes.error) throw profilesRes.error;
-      const baseTasks = tasksRes.data || [];
-      const viewsRows = viewsRes?.error ? [] : (viewsRes.data || []);
+
+      if (profilesRes.error) {
+        console.error('Erro na consulta profiles:', profilesRes.error);
+        throw profilesRes.error;
+      }
+
+      const viewsRows = viewsRes.data || [];
 
       // Contar comentários por tarefa
       const taskIds = baseTasks.map(t => t.id);
       let commentsCountMap = {};
+      
       if (taskIds.length > 0) {
-        const { data: commentsRows, error: commentsErr } = await supabase
-          .from('task_comments')
-          .select('task_id')
-          .in('task_id', taskIds);
-        if (!commentsErr) {
-          commentsRows.forEach(r => {
-            commentsCountMap[r.task_id] = (commentsCountMap[r.task_id] || 0) + 1;
-          });
+        try {
+          const { data: commentsRows, error: commentsErr } = await supabase
+            .from('task_comments')
+            .select('task_id')
+            .in('task_id', taskIds);
+          
+          if (!commentsErr && commentsRows) {
+            commentsRows.forEach(r => {
+              commentsCountMap[r.task_id] = (commentsCountMap[r.task_id] || 0) + 1;
+            });
+          }
+        } catch (commentsError) {
+          console.warn('Erro ao buscar comentários:', commentsError);
         }
       }
 
@@ -463,7 +484,7 @@ function Pendencias() {
       const profileById = {};
       (profilesRes.data || []).forEach(p => { profileById[p.id] = p; });
 
-      // Montar viewers por tarefa (dedup por usuário com a visualização mais recente)
+      // Montar viewers por tarefa
       const viewsByTask = {};
       viewsRows.forEach(v => {
         const viewer = profileById[v.viewed_by];
@@ -483,16 +504,27 @@ function Pendencias() {
         }
       });
 
-      const tasksWithCounts = baseTasks.map(t => ({ 
-        ...t, 
-        comments_count: commentsCountMap[t.id] || 0,
-        viewers: viewsByTask[t.id] ? Array.from(viewsByTask[t.id].values()).sort((a,b)=> new Date(b.at)-new Date(a.at)) : []
-      }));
+      // Enriquecer tarefas com dados dos perfis
+      const tasksWithCounts = baseTasks.map(t => {
+        const assignee = profileById[t.assignee_id];
+        const creator = profileById[t.creator_id];
+        
+        return { 
+          ...t, 
+          assignee: assignee ? { id: assignee.id, full_name: assignee.full_name, avatar_url: assignee.avatar_url } : null,
+          creator: creator ? { id: creator.id, full_name: creator.full_name } : null,
+          comments_count: commentsCountMap[t.id] || 0,
+          viewers: viewsByTask[t.id] ? Array.from(viewsByTask[t.id].values()).sort((a,b)=> new Date(b.at)-new Date(a.at)) : []
+        };
+      });
+
       setTasks(tasksWithCounts);
       setProfiles(profilesRes.data || []);
     } catch (error) {
       console.error('Erro ao carregar pendências:', error);
       toast.error("Erro ao carregar pendências.");
+      setTasks([]);
+      setProfiles([]);
     } finally {
       setLoading(false);
     }
@@ -593,14 +625,43 @@ function Pendencias() {
 
   const recordView = async (taskId) => {
     try {
+      // Verificar se a tabela task_views existe primeiro
+      const { data: checkTable, error: checkError } = await supabase
+        .from('task_views')
+        .select('id')
+        .limit(1);
+      
+      if (checkError) {
+        console.warn('Tabela task_views não existe ou erro:', checkError);
+        return; // Não falha se a tabela não existir
+      }
+
+      // Tentar inserir ou atualizar a visualização
       const { error } = await supabase
         .from('task_views')
-        .upsert({ task_id: taskId, viewed_by: user.id }, { onConflict: 'task_id,viewed_by' });
-      if (error) throw error;
+        .upsert(
+          { 
+            task_id: taskId, 
+            viewed_by: user.id,
+            created_at: new Date().toISOString()
+          }, 
+          { 
+            onConflict: 'task_id,viewed_by',
+            ignoreDuplicates: false
+          }
+        );
+      
+      if (error) {
+        console.error('Erro ao registrar visualização:', error);
+        // Não mostrar toast de erro para não incomodar o usuário
+        return;
+      }
+      
+      // Atualizar a lista de tarefas para refletir a nova visualização
       fetchTasksAndProfiles();
     } catch (e) {
       console.error('Erro ao registrar visualização:', e);
-      toast.error('Não foi possível registrar a visualização.');
+      // Não mostrar toast de erro para não incomodar o usuário
     }
   };
 

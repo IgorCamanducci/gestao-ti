@@ -39,10 +39,13 @@ Deno.serve(async (req) => {
     if (!targetUser) throw new Error("Usuário alvo não encontrado no sistema.")
     console.log("5. Email do usuário alvo encontrado:", targetUser.email);
 
-    // Gera o link de recuperação
+    // Gera o link de recuperação apontando para o site online
+    const siteUrl = Deno.env.get('SITE_URL') || Deno.env.get('SUPABASE_SITE_URL') || ''
+    const redirectTo = siteUrl ? `${siteUrl.replace(/\/$/, '')}/update-password` : undefined
     const { data, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: 'recovery',
       email: targetUser.email,
+      options: redirectTo ? { redirectTo } : undefined as any,
     })
     if (linkError) throw linkError
     console.log("6. Link de recuperação gerado com sucesso.");
