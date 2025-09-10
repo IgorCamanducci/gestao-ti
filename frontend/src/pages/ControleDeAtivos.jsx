@@ -31,7 +31,7 @@ const ActionsMenu = ({ asset, position, onClose, onEdit, onDelete, onDecommissio
 };
 
 // --- Modal para Adicionar/Editar Ativo ---
-const AssetModal = ({ onClose, onSave, existingAsset, categories, fieldsConfig = {} }) => {
+const AssetModal = ({ onClose, onSave, existingAsset, categories, fieldsConfig = {}, onContinueAdding }) => {
   const [asset, setAsset] = useState(
     existingAsset || {
       serial_number: '',
@@ -41,6 +41,7 @@ const AssetModal = ({ onClose, onSave, existingAsset, categories, fieldsConfig =
     }
   );
   const [loading, setLoading] = useState(false);
+  const [continueAdding, setContinueAdding] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -60,7 +61,21 @@ const AssetModal = ({ onClose, onSave, existingAsset, categories, fieldsConfig =
     setLoading(true);
     const success = await onSave(asset, !!existingAsset);
     setLoading(false);
-    if (success) onClose();
+    if (success) {
+      if (continueAdding && !existingAsset) {
+        // Limpa o formulário para adicionar outro ativo
+        setAsset({
+          serial_number: '',
+          category: asset.category, // Mantém a categoria
+          status: 'Em estoque',
+          metadata: {}
+        });
+        setContinueAdding(false);
+        toast.success('Ativo salvo! Adicione outro ativo ou feche o modal.');
+      } else {
+        onClose();
+      }
+    }
   };
 
   const customFields = fieldsConfig[asset.category] || [];
@@ -112,6 +127,19 @@ const AssetModal = ({ onClose, onSave, existingAsset, categories, fieldsConfig =
               />
             </div>
           ))}
+
+          {!existingAsset && (
+            <div className="form-group" style={{ marginTop: '16px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                <input 
+                  type="checkbox" 
+                  checked={continueAdding}
+                  onChange={e => setContinueAdding(e.target.checked)}
+                />
+                Adicionar mais ativos após salvar
+              </label>
+            </div>
+          )}
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
             <button type="button" onClick={onClose} className="form-button" style={{ background: 'var(--secondary-text-color)' }}>Cancelar</button>
@@ -216,6 +244,8 @@ function ControleDeAtivos() {
   const [searchTerm, setSearchTerm] = useState('');
   const [modalState, setModalState] = useState({ type: null, asset: null });
   const [menuState, setMenuState] = useState({ asset: null, position: null });
+  const [selectedAssets, setSelectedAssets] = useState(new Set());
+  const [bulkMode, setBulkMode] = useState(false);
 
   const fetchInitialData = async () => {
     try {
@@ -391,6 +421,70 @@ function ControleDeAtivos() {
     }
   };
 
+  // Funções para operações em massa
+  const toggleBulkMode = () => {
+    setBulkMode(!bulkMode);
+    setSelectedAssets(new Set());
+  };
+
+  const toggleAssetSelection = (assetId) => {
+    const newSelected = new Set(selectedAssets);
+    if (newSelected.has(assetId)) {
+      newSelected.delete(assetId);
+    } else {
+      newSelected.add(assetId);
+    }
+    setSelectedAssets(newSelected);
+  };
+
+  const selectAllAssets = () => {
+    setSelectedAssets(new Set(filteredAssets.map(asset => asset.id)));
+  };
+
+  const clearSelection = () => {
+    setSelectedAssets(new Set());
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedAssets.size === 0) return;
+    
+    if (window.confirm(`Tem certeza que deseja excluir ${selectedAssets.size} ativo(s)?`)) {
+      const toastId = toast.loading(`Excluindo ${selectedAssets.size} ativo(s)...`);
+      const { error } = await supabase
+        .from('ativos')
+        .delete()
+        .in('id', Array.from(selectedAssets));
+      
+      if (error) {
+        toast.error(error.message, { id: toastId });
+      } else {
+        toast.success(`${selectedAssets.size} ativo(s) excluído(s)!`, { id: toastId });
+        fetchInitialData();
+        setSelectedAssets(new Set());
+      }
+    }
+  };
+
+  const handleBulkMaintenance = async () => {
+    if (selectedAssets.size === 0) return;
+    
+    if (window.confirm(`Enviar ${selectedAssets.size} ativo(s) para manutenção?`)) {
+      const toastId = toast.loading(`Enviando ${selectedAssets.size} ativo(s) para manutenção...`);
+      const { error } = await supabase
+        .from('ativos')
+        .update({ status: 'Em manutenção' })
+        .in('id', Array.from(selectedAssets));
+      
+      if (error) {
+        toast.error(error.message, { id: toastId });
+      } else {
+        toast.success(`${selectedAssets.size} ativo(s) enviado(s) para manutenção!`, { id: toastId });
+        fetchInitialData();
+        setSelectedAssets(new Set());
+      }
+    }
+  };
+
   const handleMenuClick = (asset, event) => {
     event.stopPropagation();
     const rect = event.currentTarget.getBoundingClientRect();
@@ -487,10 +581,53 @@ function ControleDeAtivos() {
             onChange={(e) => setSearchTerm(e.target.value)}
             className="search-input"
           />
-          <button className="form-button" onClick={() => setModalState({ type: 'add', asset: null })}>
-            <FaPlus style={{ marginRight: '8px' }} />
-            Novo Ativo
-          </button>
+          <div className="action-buttons">
+            {bulkMode && (
+              <>
+                <button 
+                  className="form-button" 
+                  onClick={selectAllAssets}
+                  disabled={selectedAssets.size === filteredAssets.length}
+                >
+                  Selecionar Todos
+                </button>
+                <button 
+                  className="form-button" 
+                  onClick={clearSelection}
+                  disabled={selectedAssets.size === 0}
+                >
+                  Limpar Seleção
+                </button>
+                <button 
+                  className="form-button" 
+                  onClick={handleBulkMaintenance}
+                  disabled={selectedAssets.size === 0}
+                  style={{ background: 'var(--warning-color)' }}
+                >
+                  Enviar para Manutenção ({selectedAssets.size})
+                </button>
+                <button 
+                  className="form-button" 
+                  onClick={handleBulkDelete}
+                  disabled={selectedAssets.size === 0}
+                  style={{ background: 'var(--error-color)' }}
+                >
+                  Excluir ({selectedAssets.size})
+                </button>
+              </>
+            )}
+            <button 
+              className="form-button" 
+              onClick={toggleBulkMode}
+              style={{ background: bulkMode ? 'var(--secondary-text-color)' : 'var(--info-color)' }}
+            >
+              {bulkMode ? 'Sair do Modo Massa' : 'Modo Massa'}
+            </button>
+            <button className="form-button" onClick={() => setModalState({ type: 'add', asset: null })}>
+              <FaPlus style={{ marginRight: '8px' }} />
+              Novo Ativo
+            </button>
+          </div>
         </div>
       </div>
 
@@ -519,7 +656,16 @@ function ControleDeAtivos() {
         ) : filteredAssets.length > 0 ? (
           <div className="assets-grid">
             {filteredAssets.map(asset => (
-              <div key={asset.id} className={`asset-card status-${asset.status.replace(' ', '-').toLowerCase()}`}>
+              <div key={asset.id} className={`asset-card status-${asset.status.replace(' ', '-').toLowerCase()} ${bulkMode ? 'bulk-mode' : ''}`}>
+                {bulkMode && (
+                  <div className="asset-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={selectedAssets.has(asset.id)}
+                      onChange={() => toggleAssetSelection(asset.id)}
+                    />
+                  </div>
+                )}
                 <div className="asset-header">
                   <h3 className="asset-serial">{asset.serial_number || 'Sem número de série'}</h3>
                   <span className={`asset-status status-${asset.status.replace(' ', '-').toLowerCase()}`}>

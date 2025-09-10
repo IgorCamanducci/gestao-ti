@@ -24,6 +24,7 @@ import Historico from './pages/Historico.jsx'; // <-- Nova página importada
 import AtivosEmManutencao from './pages/AtivosEmManutencao.jsx';
 import Logout from './pages/Logout.jsx';
 import Anotacoes from './pages/Anotacoes.jsx';
+import TermosDeUso from './pages/TermosDeUso.jsx';
 
 const router = createBrowserRouter([
   {
@@ -42,6 +43,7 @@ const router = createBrowserRouter([
       { path: 'usuarios', element: (<CoordenadorRoute><Usuarios /></CoordenadorRoute>) },
       { path: 'historico', element: <Historico /> }, // <-- Nova rota adicionada
       { path: 'anotacoes', element: <Anotacoes /> },
+      { path: 'termos', element: <TermosDeUso /> },
       { path: 'configuracoes', element: <Configuracoes /> },
       { path: 'configuracoes/categorias-ativos', element: <GerenciarCategorias /> },
       { path: 'logout', element: <Logout /> },

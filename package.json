@@ -1,8 +1,13 @@
 {
   "devDependencies": {
+    "glob": "^10.4.5",
+    "mammoth": "^1.10.0",
     "supabase": "^2.33.7"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.56.0"
+  },
+  "scripts": {
+    "convert:termos": "node scripts/convert-termos.js"
   }
 }

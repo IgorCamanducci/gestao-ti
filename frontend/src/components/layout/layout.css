@@ -22,9 +22,11 @@
   z-index: 1000;
   padding-top: var(--spacing-md);
   padding-bottom: var(--spacing-md);
-  overflow-y: auto;
+  overflow-y: hidden; /* remove scroll na expandida */
+  overflow-x: hidden;
   min-width: 200px;
   max-width: 400px;
+  height: 100vh;
 }
 
 .layout-container.collapsed .sidebar {

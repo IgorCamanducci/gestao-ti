@@ -3,7 +3,8 @@
 .dashboard-container {
   padding: var(--spacing-xl);
   background-color: var(--bg-color);
-  min-height: 100vh;
+  height: 100%;
+  overflow-y: auto;
 }
 
 .dashboard-header {

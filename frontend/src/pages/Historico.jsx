@@ -208,21 +208,35 @@ function Historico() {
 
   const formatDate = (dateString) => {
     if (!dateString) return '-';
-    return new Date(dateString).toLocaleDateString('pt-BR');
+    return new Date(dateString).toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
+
+  const formatDateTime = (dateString) => {
+    if (!dateString) return '-';
+    return new Date(dateString).toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   const handleExport = () => {
     if (activeTab === 'baixas') {
       const csvContent = [
-        ['Número de Série', 'Categoria', 'Status', 'Data de Baixa', 'Motivo da Baixa', 'Responsável', 'Data de Criação'],
+        ['Número de Série', 'Categoria', 'Data da Baixa', 'Motivo da Baixa', 'Responsável', 'Registrado em'],
         ...filteredBaixas.map(baixa => [
           baixa.asset?.serial_number || '-',
           baixa.asset?.category || '-',
-          'Baixa',
           formatDate(baixa.decommission_date || baixa.created_at),
           (baixa.reason || '-').replace(/\n/g, ' '),
           baixa.user?.full_name || 'Usuário não identificado',
-          formatDate(baixa.created_at)
+          formatDateTime(baixa.created_at)
         ])
       ].map(row => row.join(',')).join('\n');
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -236,11 +250,10 @@ function Historico() {
       document.body.removeChild(link);
     } else {
       const csvContent = [
-        ['Número de Série', 'Categoria', 'Status', 'Data de Envio', 'Descrição', 'Responsável'],
+        ['Número de Série', 'Categoria', 'Data de Envio', 'Descrição', 'Responsável'],
         ...filteredManutencoes.map(manut => [
           manut.asset?.serial_number || '-',
           manut.asset?.category || '-',
-          'Em manutenção',
           formatDate(manut.maintenance_date),
           (manut.description || '-').replace(/\n/g, ' '),
           manut.user?.full_name || 'Usuário não identificado'
@@ -272,9 +285,21 @@ function Historico() {
   return (
     <div className="historico-container">
       {/* Header da página */}
-      <div className="historico-header">
-        <h1 className="historico-title">📋 Histórico</h1>
-        <p className="historico-subtitle">Visualize o histórico de baixas e manutenções</p>
+      <div className="assets-page-header">
+        <h1>📋 Histórico</h1>
+        <div className="search-and-actions">
+          <input 
+            type="search" 
+            placeholder={activeTab === 'baixas' ? 'Buscar por número de série, categoria ou motivo...' : 'Buscar por número de série, categoria ou descrição...'} 
+            className="search-input" 
+            value={searchTerm} 
+            onChange={(e) => setSearchTerm(e.target.value)} 
+          />
+          <button className="form-button" onClick={handleExport}>
+            <FaDownload style={{ marginRight: '8px' }} />
+            Exportar CSV
+          </button>
+        </div>
       </div>
 
       {/* Abas de tipo */}
@@ -293,40 +318,23 @@ function Historico() {
         </button>
       </div>
 
-      {/* Barra de busca e ações */}
-      <div className="search-and-actions" style={{ marginBottom: 'var(--spacing-xl)' }}>
-        <input 
-          type="search" 
-          placeholder={activeTab === 'baixas' ? 'Buscar por número de série, categoria ou motivo...' : 'Buscar por número de série, categoria ou descrição...'} 
-          className="search-input" 
-          value={searchTerm} 
-          onChange={(e) => setSearchTerm(e.target.value)} 
-        />
-        <button className="form-button" onClick={handleExport}>
-          <FaDownload style={{ marginRight: '8px' }} />
-          Exportar CSV
-        </button>
-      </div>
-
       {/* Tabela de resultados */}
       <div className="asset-table-container">
         <table className="asset-table">
           <thead>
             {activeTab === 'baixas' ? (
               <tr>
-                <th>Número de Série</th>
+                <th>Ativo</th>
                 <th>Categoria</th>
-                <th>Status</th>
-                <th>Data do Registro</th>
-                <th>Motivo da Baixa</th>
-                <th>Responsável</th>
                 <th>Data da Baixa</th>
+                <th>Motivo</th>
+                <th>Responsável</th>
+                <th>Registrado em</th>
               </tr>
             ) : (
               <tr>
-                <th>Número de Série</th>
+                <th>Ativo</th>
                 <th>Categoria</th>
-                <th>Status</th>
                 <th>Data de Envio</th>
                 <th>Descrição</th>
                 <th>Responsável</th>
@@ -338,50 +346,41 @@ function Historico() {
               filteredBaixas.length > 0 ? (
                 filteredBaixas.map(baixa => (
                   <tr key={baixa.id}>
-                    <td className="asset-name">
-                      <div className="asset-info">
-                        <span className="asset-icon">
-                          {getStatusIcon('Baixa')}
-                        </span>
-                        <span className="asset-serial-number">
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ color: 'var(--danger-color)' }}>📦</span>
+                        <span style={{ fontWeight: '500' }}>
                           {baixa.asset?.serial_number || 'Sem número de série'}
                         </span>
                       </div>
                     </td>
-                    <td className="asset-category">
-                      {baixa.asset?.category || 'Sem categoria'}
-                    </td>
-                    <td className={getStatusClass('Baixa')}>
-                      <span className="status-badge descartado">
-                        Baixa
+                    <td>{baixa.asset?.category || 'Sem categoria'}</td>
+                    <td>
+                      <span style={{ 
+                        color: 'var(--danger-color)', 
+                        fontWeight: '500',
+                        fontSize: 'var(--font-size-sm)'
+                      }}>
+                        {formatDate(baixa.decommission_date || baixa.created_at)}
                       </span>
                     </td>
-                    <td className="asset-date">
-                      <div className="date-info">
-                        <FaCalendar className="date-icon" />
-                        <span>{formatDate(baixa.created_at)}</span>
-                      </div>
-                    </td>
-                    <td className="asset-reason">
+                    <td style={{ maxWidth: '200px', wordWrap: 'break-word' }}>
                       {baixa.reason || 'Sem motivo especificado'}
                     </td>
-                    <td className="asset-responsible">
-                      <div className="user-info">
-                        <FaUser className="user-icon" />
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <FaUser style={{ color: 'var(--secondary-text-color)', fontSize: '12px' }} />
                         <span>{baixa.user?.full_name || 'Usuário não identificado'}</span>
                       </div>
                     </td>
-                    <td className="asset-created">
-                      <div className="date-info">
-                        <FaCalendar className="date-icon" />
-                        <span>{formatDate(baixa.decommission_date)}</span>
-                      </div>
+                    <td style={{ color: 'var(--secondary-text-color)', fontSize: 'var(--font-size-sm)' }}>
+                      {formatDateTime(baixa.created_at)}
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={7} className="empty-state">
+                  <td colSpan={6} className="empty-state">
                     {searchTerm 
                       ? 'Nenhuma baixa encontrada com os filtros aplicados.'
                       : 'Nenhuma baixa encontrada.'
@@ -393,30 +392,30 @@ function Historico() {
               filteredManutencoes.length > 0 ? (
                 filteredManutencoes.map(manut => (
                   <tr key={manut.id}>
-                    <td className="asset-name">
-                      <div className="asset-info">
-                        <span className="asset-icon">
-                          {getStatusIcon('manutencao')}
-                        </span>
-                        <span className="asset-serial-number">
-                          {manut.asset?.serial_number || '---'}
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ color: 'var(--warning-color)' }}>🔧</span>
+                        <span style={{ fontWeight: '500' }}>
+                          {manut.asset?.serial_number || 'Sem número de série'}
                         </span>
                       </div>
                     </td>
-                    <td className="asset-category">{manut.asset?.category || '---'}</td>
-                    <td className="status-em-manutencao">
-                      <span className="status-badge">Em manutenção</span>
+                    <td>{manut.asset?.category || 'Sem categoria'}</td>
+                    <td>
+                      <span style={{ 
+                        color: 'var(--warning-color)', 
+                        fontWeight: '500',
+                        fontSize: 'var(--font-size-sm)'
+                      }}>
+                        {formatDate(manut.maintenance_date)}
+                      </span>
                     </td>
-                    <td className="asset-date">
-                      <div className="date-info">
-                        <FaCalendar className="date-icon" />
-                        <span>{formatDate(manut.maintenance_date)}</span>
-                      </div>
+                    <td style={{ maxWidth: '200px', wordWrap: 'break-word' }}>
+                      {manut.description || 'Sem descrição'}
                     </td>
-                    <td className="asset-reason">{manut.description || '-'}</td>
-                    <td className="asset-responsible">
-                      <div className="user-info">
-                        <FaUser className="user-icon" />
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <FaUser style={{ color: 'var(--secondary-text-color)', fontSize: '12px' }} />
                         <span>{manut.user?.full_name || 'Usuário não identificado'}</span>
                       </div>
                     </td>
@@ -424,7 +423,7 @@ function Historico() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={6} className="empty-state">
+                  <td colSpan={5} className="empty-state">
                     {searchTerm 
                       ? 'Nenhum registro encontrado com os filtros aplicados.'
                       : 'Nenhum registro de manutenção encontrado.'
