@@ -20,6 +20,14 @@
   display: flex;
   gap: var(--spacing-md);
   align-items: center;
+  flex-wrap: wrap;
+}
+
+.action-buttons {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .search-input {
@@ -125,6 +133,32 @@
 
 .asset-card.status-em-manutencao::before {
   background: var(--error-color);
+}
+
+/* Modo Massa */
+.asset-card.bulk-mode {
+  padding-left: calc(var(--spacing-md) + 24px);
+  cursor: default;
+}
+
+.asset-card.bulk-mode:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: var(--border-color);
+}
+
+.asset-checkbox {
+  position: absolute;
+  top: var(--spacing-sm);
+  left: var(--spacing-sm);
+  z-index: 10;
+}
+
+.asset-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--primary-color);
 }
 
 .asset-header {

@@ -91,6 +91,51 @@ const EditCategoryForm = ({ category, onSave, onCancel }) => {
   );
 };
 
+// --- Componente para editar campo ---
+const EditFieldForm = ({ field, onSave, onCancel }) => {
+  const [label, setLabel] = useState(field.field_label);
+  const [loading, setLoading] = useState(false);
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    if (!label.trim()) return;
+    setLoading(true);
+    
+    const { error } = await supabase
+      .from('asset_category_fields')
+      .update({ field_label: label.trim() })
+      .eq('id', field.id);
+
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success('Campo atualizado!');
+      onSave();
+    }
+    setLoading(false);
+  };
+
+  return (
+    <form onSubmit={handleSave} className="edit-field-form">
+      <input 
+        type="text" 
+        className="form-group"
+        value={label}
+        onChange={(e) => setLabel(e.target.value)}
+        placeholder="Nome do campo"
+      />
+      <div className="edit-actions">
+        <button type="submit" className="form-button save-button" disabled={loading}>
+          <FaSave />
+        </button>
+        <button type="button" className="form-button cancel-button" onClick={onCancel}>
+          <FaTimes />
+        </button>
+      </div>
+    </form>
+  );
+};
+
 // --- Componente Principal da Página de Gerenciamento ---
 function GerenciarCategorias() {
   const [categories, setCategories] = useState([]);
@@ -99,6 +144,7 @@ function GerenciarCategorias() {
   const [newCategoryName, setNewCategoryName] = useState('');
   const [expandedCategoryId, setExpandedCategoryId] = useState(null); // Controla qual card está aberto
   const [editingCategoryId, setEditingCategoryId] = useState(null); // Controla qual categoria está sendo editada
+  const [editingFieldId, setEditingFieldId] = useState(null); // Controla qual campo está sendo editado
 
   const fetchData = async () => {
     try {
@@ -184,6 +230,19 @@ function GerenciarCategorias() {
     setEditingCategoryId(null);
   };
 
+  const handleEditField = (fieldId) => {
+    setEditingFieldId(fieldId);
+  };
+
+  const handleSaveField = () => {
+    setEditingFieldId(null);
+    fetchData();
+  };
+
+  const handleCancelEditField = () => {
+    setEditingFieldId(null);
+  };
+
   // Função para abrir/fechar o card (accordion)
   const toggleExpand = (categoryId) => {
     setExpandedCategoryId(prevId => (prevId === categoryId ? null : categoryId));
@@ -260,10 +319,33 @@ function GerenciarCategorias() {
                 <ul className="field-list">
                   {(fields[cat.id] || []).map(field => (
                     <li key={field.id}>
-                      <span>{field.field_label}</span>
-                      <button className="delete-button" onClick={() => handleDeleteField(field.id)} title="Excluir Campo">
-                        <FaTrash />
-                      </button>
+                      {editingFieldId === field.id ? (
+                        <EditFieldForm 
+                          field={field}
+                          onSave={handleSaveField}
+                          onCancel={handleCancelEditField}
+                        />
+                      ) : (
+                        <>
+                          <span>{field.field_label}</span>
+                          <div className="field-controls">
+                            <button 
+                              className="edit-button" 
+                              onClick={() => handleEditField(field.id)} 
+                              title="Editar Campo"
+                            >
+                              <FaEdit />
+                            </button>
+                            <button 
+                              className="delete-button" 
+                              onClick={() => handleDeleteField(field.id)} 
+                              title="Excluir Campo"
+                            >
+                              <FaTrash />
+                            </button>
+                          </div>
+                        </>
+                      )}
                     </li>
                   ))}
                   {(!fields[cat.id] || fields[cat.id].length === 0) && <p style={{color: 'var(--secondary-text-color)', margin: 0}}>Nenhum campo customizado para esta categoria.</p>}

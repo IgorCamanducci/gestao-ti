@@ -5,7 +5,7 @@ import { useTheme } from '../../context/ThemeContext';
 import {
   FaUserCircle, FaBars, FaHome, FaCalendarAlt, FaBoxOpen, FaUsers,
   FaCogs, FaSignOutAlt, FaTasks, FaExchangeAlt, FaWarehouse, FaDesktop,
-  FaHistory, FaSun, FaMoon, FaWrench, FaKey, FaStickyNote
+  FaHistory, FaSun, FaMoon, FaWrench, FaKey, FaStickyNote, FaFileSignature
 } from 'react-icons/fa';
 import './layout.css';
 
@@ -46,6 +46,7 @@ function Layout() {
     { path: '/ativos', name: 'Ativos', icon: <FaDesktop /> },
     { path: '/manutencao', name: 'Manutenção', icon: <FaWrench /> },
     { path: '/historico', name: 'Histórico', icon: <FaHistory /> },
+    { path: '/termos', name: 'Termos de Uso', icon: <FaFileSignature /> },
     { path: '/folgas', name: 'Gestão de Folgas', icon: <FaCalendarAlt /> },
     { path: '/anotacoes', name: 'Anotações', icon: <FaStickyNote /> },
     { path: '/senhas', name: 'Senhas', icon: <FaKey /> },

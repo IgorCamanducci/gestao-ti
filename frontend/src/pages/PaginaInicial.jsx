@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import { 
@@ -11,7 +11,7 @@ import { Link } from 'react-router-dom';
 import './PaginaInicial.css';
 
 // --- Componente para os Cards de Estatística ---
-const StatCard = ({ title, value, icon, type = 'primary', subtitle = null, link = null }) => (
+const StatCard = React.memo(({ title, value, icon, type = 'primary', subtitle = null, link = null }) => (
   <div className={`stat-card ${type} ${link ? 'clickable' : ''}`}>
     {link ? (
       <Link to={link} className="stat-card-link">
@@ -33,10 +33,10 @@ const StatCard = ({ title, value, icon, type = 'primary', subtitle = null, link 
       </>
     )}
   </div>
-);
+));
 
 // --- Componente para Notificações Rápidas ---
-const QuickNotification = ({ title, message, type = 'info', link = null }) => (
+const QuickNotification = React.memo(({ title, message, type = 'info', link = null }) => (
   <div className={`quick-notification ${type}`}>
     <div className="notification-icon">
       {type === 'success' && <FaCheckCircle />}
@@ -49,7 +49,7 @@ const QuickNotification = ({ title, message, type = 'info', link = null }) => (
       {link && <Link to={link.to} className="notification-link">{link.text}</Link>}
     </div>
   </div>
-);
+));
 
 // --- Componente Principal do Dashboard ---
 function PaginaInicial() {
@@ -67,18 +67,19 @@ function PaginaInicial() {
   });
 
   // Efeito para a saudação e o relógio
+  const updateDateTime = useCallback(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) setGreeting('Bom dia');
+    else if (hour < 18) setGreeting('Boa tarde');
+    else setGreeting('Boa noite');
+    setCurrentDateTime(new Date());
+  }, []);
+
   useEffect(() => {
-    const updateDateTime = () => {
-      const hour = new Date().getHours();
-      if (hour < 12) setGreeting('Bom dia');
-      else if (hour < 18) setGreeting('Boa tarde');
-      else setGreeting('Boa noite');
-      setCurrentDateTime(new Date());
-    };
     updateDateTime();
     const timer = setInterval(updateDateTime, 60000); // Atualiza a cada minuto
     return () => clearInterval(timer);
-  }, []);
+  }, [updateDateTime]);
 
   // Efeito para buscar os dados do dashboard
   useEffect(() => {
@@ -173,10 +174,10 @@ function PaginaInicial() {
     fetchDashboardData();
   }, [profile]);
 
-  const dateTimeFormatter = new Intl.DateTimeFormat('pt-BR', {
+  const dateTimeFormatter = useMemo(() => new Intl.DateTimeFormat('pt-BR', {
     dateStyle: 'full',
     timeStyle: 'short',
-  });
+  }), []);
 
   if (loading) {
     return (

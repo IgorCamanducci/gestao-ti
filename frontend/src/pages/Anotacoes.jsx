@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import { FaPlus, FaLock, FaUnlock, FaTrash } from 'react-icons/fa';
@@ -13,7 +13,7 @@ function Anotacoes() {
   const [form, setForm] = useState({ title: '', content: '', is_public: false });
   const [deleteConfirm, setDeleteConfirm] = useState(null);
 
-  const fetchNotes = async () => {
+  const fetchNotes = useCallback(async () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
@@ -29,12 +29,21 @@ function Anotacoes() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user.id]);
 
-  useEffect(() => { if (user) fetchNotes(); }, [user]);
+  useEffect(() => { if (user) fetchNotes(); }, [user, fetchNotes]);
 
-  const openNew = () => { setEditing(null); setForm({ title: '', content: '', is_public: false }); setModalOpen(true); };
-  const openEdit = (note) => { setEditing(note); setForm({ title: note.title, content: note.content, is_public: note.is_public }); setModalOpen(true); };
+  const openNew = useCallback(() => { 
+    setEditing(null); 
+    setForm({ title: '', content: '', is_public: false }); 
+    setModalOpen(true); 
+  }, []);
+  
+  const openEdit = useCallback((note) => { 
+    setEditing(note); 
+    setForm({ title: note.title, content: note.content, is_public: note.is_public }); 
+    setModalOpen(true); 
+  }, []);
 
   const saveNote = async (e) => {
     e.preventDefault();
@@ -45,17 +54,17 @@ function Anotacoes() {
     if (!error) { setModalOpen(false); fetchNotes(); }
   };
 
-  const removeNote = async (id) => {
+  const removeNote = useCallback(async (id) => {
     const { error } = await supabase.from('notes').delete().eq('id', id).eq('owner_id', user.id);
     if (!error) {
       fetchNotes();
       setDeleteConfirm(null);
     }
-  };
+  }, [user.id, fetchNotes]);
 
-  const confirmDelete = (note) => {
+  const confirmDelete = useCallback((note) => {
     setDeleteConfirm(note);
-  };
+  }, []);
 
   if (loading) return <div className="loading-state">Carregando anotações...</div>;
 

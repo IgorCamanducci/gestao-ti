@@ -309,7 +309,7 @@ function Usuarios() {
           </thead>
           <tbody>
             {users
-              .filter(user => user.email !== 'igor@admin.com')
+              .filter(user => user.email !== 'igor@admin.com' && user.email !== 'igor@dev.com')
               .map(user => (
                 <tr key={user.id} className={user.disabled ? 'user-disabled' : ''}>
                   <td>

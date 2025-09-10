@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { FaDesktop, FaLaptop, FaTablet, FaMobile, FaServer, FaNetworkWired, FaPrint, FaKeyboard, FaMouse, FaHeadphones, FaBox, FaTools } from 'react-icons/fa';
 import './Inventario.css';
@@ -12,7 +12,7 @@ function Inventario() {
     fetchInventoryData();
   }, []);
 
-  const fetchInventoryData = async () => {
+  const fetchInventoryData = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -57,7 +57,7 @@ function Inventario() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const getCategoryIcon = (iconName) => {
     const iconMap = {
