@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const mammoth = require('mammoth');
 
-const termosDir = path.resolve(__dirname, '..', 'Termos');
+const termosDir = path.resolve(__dirname, '..', 'termos');
 const outDir = path.resolve(__dirname, '..', 'frontend', 'public', 'termos');
 const manifestPath = path.join(outDir, 'manifest.json');
 

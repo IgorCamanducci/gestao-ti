@@ -14,8 +14,11 @@ function RecuperarSenha() {
     setLoading(true);
     setMessage('');
     try {
-      const siteUrl = import.meta.env.VITE_SITE_URL || window.location.origin;
-      const redirectTo = `${siteUrl}/update-password`;
+      const siteUrl = import.meta.env.VITE_SITE_URL;
+      if (!siteUrl) {
+        throw new Error("VITE_SITE_URL não configurada nas variáveis de ambiente");
+      }
+      const redirectTo = `${siteUrl.replace(/\/$/, '')}/update-password`;
       const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
       if (error) throw error;
       toast.success('Link de recuperação enviado! Verifique seu e-mail.');
