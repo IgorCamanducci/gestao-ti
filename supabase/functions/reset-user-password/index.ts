@@ -40,8 +40,11 @@ Deno.serve(async (req) => {
     console.log("5. Email do usuário alvo encontrado:", targetUser.email);
 
     // Gera o link de recuperação apontando para o site online
-    const siteUrl = Deno.env.get('SITE_URL') || Deno.env.get('SUPABASE_SITE_URL') || 'https://seu-dominio.com'
-    const redirectTo = siteUrl ? `${siteUrl.replace(/\/$/, '')}/update-password` : undefined
+    const siteUrl = Deno.env.get('SITE_URL') || Deno.env.get('SUPABASE_SITE_URL')
+    if (!siteUrl) {
+      throw new Error("SITE_URL não configurada nas variáveis de ambiente do Supabase")
+    }
+    const redirectTo = `${siteUrl.replace(/\/$/, '')}/update-password`
     const { data, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: 'recovery',
       email: targetUser.email,
