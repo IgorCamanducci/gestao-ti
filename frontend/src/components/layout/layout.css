@@ -22,11 +22,32 @@
   z-index: 1000;
   padding-top: var(--spacing-md);
   padding-bottom: var(--spacing-md);
-  overflow-y: hidden; /* remove scroll na expandida */
+  overflow-y: auto; /* permite scroll quando necessário */
   overflow-x: hidden;
   min-width: 200px;
   max-width: 400px;
   height: 100vh;
+  /* Personaliza a barra de rolagem */
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary-color) transparent;
+}
+
+.sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background-color: var(--primary-color);
+  border-radius: 3px;
+  opacity: 0.3;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  opacity: 0.6;
 }
 
 .layout-container.collapsed .sidebar {
@@ -97,7 +118,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: var(--font-size-xl);
+  font-size: 14px; /* tamanho para sidebar expandida */
+}
+
+/* Ícone do botão toggle na sidebar colapsada */
+.layout-container.collapsed .toggle-button {
+  font-size: 16px; /* tamanho para sidebar colapsada */
 }
 
 .toggle-button:hover {
@@ -111,7 +137,8 @@
   flex-direction: column;
   gap: var(--spacing-xs);
   padding: 0 var(--spacing-md);
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
+  min-height: 0; /* permite que o flex funcione corretamente */
 }
 
 .nav-item {
@@ -123,12 +150,13 @@
   text-decoration: none;
   border-radius: var(--border-radius-md);
   transition: all var(--transition-fast);
-  font-size: var(--font-size-base);
+  font-size: 14px; /* tamanho fixo para consistência */
   font-weight: 500;
   border-left: 3px solid transparent;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-height: 40px; /* altura mínima consistente */
 }
 
 .nav-item:hover {
@@ -145,7 +173,7 @@
 }
 
 .nav-icon {
-  font-size: var(--font-size-lg);
+  font-size: 14px; /* tamanho fixo para sidebar expandida */
   width: 20px;
   text-align: center;
   flex-shrink: 0;
@@ -173,10 +201,11 @@
   text-align: center;
   margin: 0 auto;
   transform: none;
+  min-height: 36px; /* altura consistente para colapsada */
 }
 
 .layout-container.collapsed .nav-icon {
-  font-size: var(--font-size-lg);
+  font-size: 16px; /* tamanho fixo para sidebar colapsada */
   width: 100%;
   margin: 0 auto;
   display: block;
@@ -197,9 +226,10 @@
 }
 
 .sidebar-footer.refined {
-  padding: var(--spacing-md);
+  padding: var(--spacing-sm);
   border-top: 1px solid var(--border-color);
   margin-top: auto;
+  flex-shrink: 0; /* evita que seja comprimido */
 }
 
 .sidebar-actions.refined {
@@ -220,11 +250,17 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  font-size: var(--font-size-sm);
+  font-size: 13px; /* tamanho consistente */
   font-weight: 500;
   width: 100%;
   text-align: left;
   justify-content: flex-start;
+  min-height: 36px; /* altura mínima consistente */
+}
+
+/* Ícones dos botões de ação na sidebar expandida */
+.sidebar-action-btn svg {
+  font-size: 14px; /* mesmo tamanho dos ícones do menu */
 }
 
 .sidebar-action-btn:hover {
@@ -242,17 +278,22 @@
   align-items: center;
   gap: var(--spacing-sm);
   padding: var(--spacing-sm);
-  border-radius: var(--border-radius-md);
+  border-radius: 50%; /* sempre circular */
   background-color: var(--bg-tertiary-color);
   color: var(--primary-text-color);
   font-weight: 600;
   font-size: var(--font-size-sm);
   justify-content: center;
   text-align: center;
+  height: 40px; /* tamanho fixo */
+  width: 40px; /* tamanho fixo */
+  flex-shrink: 0;
+  overflow: hidden; /* garante que imagens não vazem */
+  aspect-ratio: 1; /* garante proporção quadrada */
 }
 
 .layout-container.collapsed .sidebar-footer.refined {
-  padding: var(--spacing-sm);
+  padding: var(--spacing-xs);
 }
 
 .layout-container.collapsed .sidebar-actions.refined {
@@ -260,24 +301,81 @@
 }
 
 .layout-container.collapsed .sidebar-action-btn {
-  justify-content: center;
-  padding: var(--spacing-sm);
-  text-align: center;
-  margin: 0 auto;
+  justify-content: center !important;
+  padding: var(--spacing-sm) !important;
+  text-align: center !important;
+  margin: 0 auto !important;
+  min-height: 36px !important; /* mesma altura dos itens do menu */
+  width: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  border-left: none !important;
+  border-radius: var(--border-radius-sm) !important;
+  gap: 0 !important; /* remove gap para centralizar melhor */
+}
+
+/* Centraliza os ícones dos botões de ação na sidebar colapsada */
+.layout-container.collapsed .sidebar-action-btn svg {
+  font-size: 14px !important; /* tamanho ajustado para 14px */
+  width: 100% !important;
+  margin: 0 auto !important;
+  display: block !important;
+  text-align: center !important;
+}
+
+/* Força o tamanho dos ícones na sidebar colapsada */
+.layout-container.collapsed .sidebar-action-btn {
+  font-size: 14px !important;
+}
+
+.layout-container.collapsed .sidebar-action-btn * {
+  font-size: 14px !important;
+}
+
+/* Esconde o texto dos botões de ação na sidebar colapsada */
+.layout-container.collapsed .sidebar-action-btn .nav-text {
+  opacity: 0;
+  width: 0;
+  overflow: hidden;
 }
 
 .layout-container.collapsed .user-avatar.refined {
   justify-content: center;
-  padding: var(--spacing-sm);
+  padding: 0; /* remove padding para evitar distorção */
   text-align: center;
   margin: 0 auto;
+  height: 32px; /* tamanho menor para colapsada */
+  width: 32px; /* tamanho menor para colapsada */
+  border-radius: 50%;
+  aspect-ratio: 1; /* garante que seja sempre circular */
+  display: flex;
+  align-items: center;
+  overflow: hidden; /* garante que a imagem não vaze */
+}
+
+/* Garante que todas as imagens de avatar sejam circulares e do mesmo tamanho */
+.user-avatar.refined img {
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 50% !important;
+  object-fit: cover !important;
+  aspect-ratio: 1 !important;
+  display: block !important;
 }
 
 .layout-container.expanded .sidebar-action-btn {
   font-weight: 500;
   width: 100%;
-  text-align: center;
-  justify-content: center;
+  text-align: left;
+  justify-content: flex-start;
+  border-left: 3px solid transparent;
+  min-height: 40px; /* mesma altura dos itens do menu */
+}
+
+.layout-container.expanded .sidebar-action-btn:hover {
+  background-color: var(--bg-tertiary-color);
+  color: var(--primary-text-color);
+  border-left-color: var(--primary-color);
 }
 
 .layout-container.expanded .user-avatar.refined {

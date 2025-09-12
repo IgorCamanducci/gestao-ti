@@ -163,7 +163,6 @@ function Layout() {
               <img
                 src={profile.avatar_url}
                 alt="Avatar"
-                style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
               />
             ) : (
               getInitials(profile?.full_name)
