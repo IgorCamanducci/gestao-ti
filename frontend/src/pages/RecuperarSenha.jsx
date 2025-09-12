@@ -14,11 +14,18 @@ function RecuperarSenha() {
     setLoading(true);
     setMessage('');
     try {
-      const siteUrl = import.meta.env.VITE_SITE_URL;
-      if (!siteUrl) {
-        throw new Error("VITE_SITE_URL não configurada nas variáveis de ambiente");
+      // Tenta usar VITE_SITE_URL se definida
+      let siteUrl = import.meta.env.VITE_SITE_URL?.trim();
+      
+      // Se não estiver definida ou for localhost, usa a origem atual
+      if (!siteUrl || siteUrl.includes('localhost') || siteUrl.includes('127.0.0.1')) {
+        siteUrl = window.location.origin;
       }
-      const redirectTo = `${siteUrl.replace(/\/$/, '')}/update-password`;
+
+      // Remove barra final se existir
+      siteUrl = siteUrl.replace(/\/$/, '');
+
+      const redirectTo = `${siteUrl}/update-password`;
       const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
       if (error) throw error;
       toast.success('Link de recuperação enviado! Verifique seu e-mail.');
